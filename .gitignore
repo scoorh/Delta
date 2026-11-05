@@ -1,0 +1,6 @@
+.idea/
+cmake-build-debug/
+**/VRoid_*/
+**/AnimeFemaleBasemeshAgeKit/
+*.blend1
+*.mesh
