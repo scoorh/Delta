@@ -36,9 +36,16 @@ add_executable(Delta ${SOURCES}
         include/core/memory.h
         src/core/memory/linear_block.cpp
         src/core/memory/memory.cpp
-        src/core/graphics/swapchain.cpp
+        src/core/graphics/render_target.cpp
         include/core/window.h
         src/core/graphics/frame.cpp
+        src/core/memory/resource_pool.cpp
+        include/core/resource/graphics.h
+        src/core/resource/image.cpp
+        src/core/resource/shader.cpp
+        src/core/resource/image_sampler.cpp
+        src/core/memory/gpu_block.cpp
+        src/core/memory/array.cpp
 )
 
 
@@ -95,6 +102,9 @@ target_compile_options(Delta PRIVATE
         -ffunction-sections
         -fdata-sections
 )
+
+
+target_compile_options(Delta PRIVATE -mavx2 -msse4.1)
 
 
 target_compile_options(Delta PRIVATE

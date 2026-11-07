@@ -3,7 +3,7 @@
 
 static void get_instance();
 static void register_class();
-static void create_handle();
+static void create_swapchain_handle();
 static void create_vulkan_surface();
 
 
@@ -13,7 +13,7 @@ namespace window
     {
         get_instance();
         register_class();
-        create_handle();
+        create_swapchain_handle();
         create_vulkan_surface();
     }
 
@@ -82,7 +82,7 @@ static void register_class()
 }
 
 
-static void create_handle()
+static void create_swapchain_handle()
 {
     u32 ex_style = WS_EX_APPWINDOW;
     u32 style = WS_OVERLAPPEDWINDOW;

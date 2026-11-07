@@ -3,11 +3,11 @@
 
 namespace memory::linear_block
 {
-    b8 initialize(linear_block_t* ptr, const u32 size)
+    b8 initialize(linear_block_t* ptr, const u32 size, const PFN_allocate_function allocate_function)
     {
         ptr->used = 0;
         ptr->size = size;
-        ptr->block = (c8*)malloc(size);
+        ptr->block = (c8*)allocate_function(size);
         return true;
     }
 
@@ -26,7 +26,7 @@ namespace memory::linear_block
 
     void free(linear_block_t* ptr, const u32 size)
     {
-        assert(ptr->used - size > 0);
+        assert(ptr->used > size);
         ptr->used -= size;
     }
 

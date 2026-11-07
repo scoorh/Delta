@@ -3,7 +3,7 @@
 
 
 static void pick_device();
-static void create_handle();
+static void create_swapchain_handle();
 static void get_functions();
 static void get_queues();
 static void create_mutex();
@@ -14,7 +14,7 @@ namespace renderer
     void initialize_device()
     {
         pick_device();
-        create_handle();
+        create_swapchain_handle();
         get_functions();
         get_queues();
         create_mutex();
@@ -61,7 +61,7 @@ static void pick_device()
 }
 
 
-static void create_handle()
+static void create_swapchain_handle()
 {
     u32 layer_count = 0;
     u32 extension_count = 1;

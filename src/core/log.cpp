@@ -3,6 +3,15 @@
 
 namespace logger
 {
+    void error(const code code, const s32 identifier)
+    {
+        //
+        // TODO: ..
+        //
+        error(code, (u32)identifier);
+    }
+
+
     void error(const code code, const u32 identifier)
     {
         //

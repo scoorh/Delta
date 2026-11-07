@@ -7,7 +7,11 @@
 namespace renderer
 {
     constexpr u32 frames_in_flight = 2;
+
     constexpr u32 max_swapchain_image_count = 4;
+
+    constexpr u32 interaction_buffer_image_id = 65000;
+    constexpr u32 depth_buffer_image_id = 65001;
 }
 
 
@@ -29,6 +33,10 @@ namespace renderer
     inline u32 swapchain_image_count = 0;
     inline VkImage swapchain_image_array[max_swapchain_image_count] = {};
     inline VkImageView swapchain_image_view_array[max_swapchain_image_count] = {};
+    inline VkImage interaction_buffer_image = nullptr;
+    inline VkImage depth_buffer_image = nullptr;
+    inline VkImageView interaction_buffer_image_view = nullptr;
+    inline VkImageView depth_buffer_image_view = nullptr;
 
     struct frame_t
     {

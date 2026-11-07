@@ -56,7 +56,7 @@ static void begin_draw_to_swapchain_commands(const u32 frame_idx)
     }
 
 
-    constexpr u32 attachment_image_barrier_count = 1;
+    constexpr u32 attachment_image_barrier_count = 3;
     VkImageMemoryBarrier2 attachment_image_barriers[attachment_image_barrier_count] = {};
     VkDependencyInfo barrier_dependency_info = {};
 
@@ -78,11 +78,41 @@ static void begin_draw_to_swapchain_commands(const u32 frame_idx)
     attachment_image_barriers[0].subresourceRange.levelCount = 1;
     attachment_image_barriers[0].subresourceRange.layerCount = 1;
 
+    attachment_image_barriers[2].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+    attachment_image_barriers[2].srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    attachment_image_barriers[2].srcAccessMask = 0;
+    attachment_image_barriers[2].dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    attachment_image_barriers[2].dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+    attachment_image_barriers[2].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachment_image_barriers[2].newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    attachment_image_barriers[2].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    attachment_image_barriers[2].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    attachment_image_barriers[2].image = renderer::interaction_buffer_image;
+    attachment_image_barriers[2].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    attachment_image_barriers[2].subresourceRange.levelCount = 1;
+    attachment_image_barriers[2].subresourceRange.layerCount = 1;
+
+    attachment_image_barriers[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+    attachment_image_barriers[1].srcStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+    attachment_image_barriers[1].srcAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    attachment_image_barriers[1].dstStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
+    attachment_image_barriers[1].dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    attachment_image_barriers[1].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachment_image_barriers[1].newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    attachment_image_barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    attachment_image_barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    attachment_image_barriers[1].image = renderer::depth_buffer_image;
+    attachment_image_barriers[1].subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    attachment_image_barriers[1].subresourceRange.levelCount = 1;
+    attachment_image_barriers[1].subresourceRange.layerCount = 1;
+
     vulkan::vkCmdPipelineBarrier2(cmd, &barrier_dependency_info);
 
 
-    constexpr u32 color_attachment_count = 1;
+    constexpr u32 color_attachment_count = 2;
     VkRenderingAttachmentInfo color_attachment_info[color_attachment_count] = {};
+    VkRenderingAttachmentInfo depth_attachment_info = {};
+
     color_attachment_info[0].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     color_attachment_info[0].imageView = renderer::swapchain_image_view_array[renderer::frames[frame_idx].acquired_swapchain_image_idx];
     color_attachment_info[0].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
@@ -93,6 +123,20 @@ static void begin_draw_to_swapchain_commands(const u32 frame_idx)
     color_attachment_info[0].clearValue.color.float32[2] = 0.93f;
     color_attachment_info[0].clearValue.color.float32[3] = 1.0f;
 
+    color_attachment_info[1].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    color_attachment_info[1].imageView = renderer::interaction_buffer_image_view;
+    color_attachment_info[1].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    color_attachment_info[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment_info[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment_info[1].clearValue.color.uint32[0] = 0xffffffff;
+
+    depth_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    depth_attachment_info.imageView = renderer::depth_buffer_image_view;
+    depth_attachment_info.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    depth_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depth_attachment_info.clearValue.depthStencil.depth = 1.0f;
+
     VkRenderingInfo rendering_info = {};
     rendering_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
     rendering_info.renderArea.extent.width = renderer::window_width;
@@ -100,6 +144,7 @@ static void begin_draw_to_swapchain_commands(const u32 frame_idx)
     rendering_info.layerCount = 1;
     rendering_info.colorAttachmentCount = color_attachment_count;
     rendering_info.pColorAttachments = color_attachment_info;
+    rendering_info.pDepthAttachment = &depth_attachment_info;
 
     vulkan::vkCmdBeginRendering(cmd, &rendering_info);
 
@@ -125,7 +170,7 @@ static void submit_draw_to_swapchain_commands(const u32 frame_idx)
     vulkan::vkCmdEndRendering(cmd);
 
 
-    constexpr u32 attachment_image_barrier_count = 1;
+    constexpr u32 attachment_image_barrier_count = 2;
     VkImageMemoryBarrier2 attachment_image_barriers[attachment_image_barrier_count] = {};
     VkDependencyInfo barrier_dependency_info = {};
 
@@ -146,6 +191,20 @@ static void submit_draw_to_swapchain_commands(const u32 frame_idx)
     attachment_image_barriers[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     attachment_image_barriers[0].subresourceRange.levelCount = 1;
     attachment_image_barriers[0].subresourceRange.layerCount = 1;
+
+    attachment_image_barriers[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+    attachment_image_barriers[1].srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    attachment_image_barriers[1].srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+    attachment_image_barriers[1].dstStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
+    attachment_image_barriers[1].dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
+    attachment_image_barriers[1].oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    attachment_image_barriers[1].newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    attachment_image_barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    attachment_image_barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    attachment_image_barriers[1].image = renderer::interaction_buffer_image;
+    attachment_image_barriers[1].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    attachment_image_barriers[1].subresourceRange.levelCount = 1;
+    attachment_image_barriers[1].subresourceRange.layerCount = 1;
 
     vulkan::vkCmdPipelineBarrier2(cmd, &barrier_dependency_info);
 

@@ -8,6 +8,12 @@ namespace settings
         memory::temporary_block_1_size = 2 << 20;
         memory::temporary_block_2_size = 2 << 20;
         memory::core_block_size = 2 << 20;
+        memory::buffer_resource_pool_size = 128;
+        memory::image_resource_pool_size = 128;
+        memory::image_sampler_resource_pool_size = 128;
+        memory::shader_resource_pool_size = 128;
+        memory::pipeline_resource_pool_size = 128;
+        memory::gpu_block_array_size = 128;
 
         application::version.major = 1;
         application::version.minor = 1;

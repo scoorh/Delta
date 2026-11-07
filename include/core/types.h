@@ -60,6 +60,9 @@ static_assert(sizeof(b8) == 1);
 // ==================================================
 // includes
 // ==================================================
+//TODO:  check for avx2 support
+#include <immintrin.h>
+#include <avxintrin.h>
 #ifndef NDEBUG
 #include <cassert>
 #endif
@@ -70,6 +73,7 @@ static_assert(sizeof(b8) == 1);
 #include <core/log.h>
 #include <core/settings.h>
 #include <core/window.h>
+#include <core/resource/graphics.h>
 #include <core/graphics/vulkan.h>
 #include <core/graphics/gpu_info.h>
 #include <core/graphics/renderer.h>
