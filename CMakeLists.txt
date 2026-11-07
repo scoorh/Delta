@@ -20,7 +20,7 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
 add_executable(Delta ${SOURCES}
         include/core/types.h
         src/core/graphics/vulkan.cpp
-        src/core/graphics/window.cpp
+        src/core/window.cpp
         include/core/settings.h
         include/core/graphics/renderer.h
         include/core/graphics/vulkan.h
@@ -32,6 +32,13 @@ add_executable(Delta ${SOURCES}
         src/core/settings.cpp
         include/core/graphics/gpu_info.h
         src/core/graphics/gpu_info.cpp
+        src/core/graphics/gpu.cpp
+        include/core/memory.h
+        src/core/memory/linear_block.cpp
+        src/core/memory/memory.cpp
+        src/core/graphics/swapchain.cpp
+        include/core/window.h
+        src/core/graphics/frame.cpp
 )
 
 
@@ -74,9 +81,9 @@ target_link_libraries(Delta PRIVATE
 target_compile_options(Delta PRIVATE
         -Wall
         -Wextra
-        -Wpedantic
         -Wconversion
         -Wshadow
+        -Wno-unused-variable
         -Werror=return-type
 
         -fno-rtti

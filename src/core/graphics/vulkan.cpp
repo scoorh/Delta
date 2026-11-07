@@ -105,7 +105,7 @@ static void get_instance_functions()
 
 
 #ifndef NDEBUG
-#include <stdio.h>
+#include <cstdio>
 static VKAPI_ATTR VkBool32 VKAPI_CALL vk_messenger_callback([[maybe_unused]] VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                                                             [[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT message_type,
                                                             const VkDebugUtilsMessengerCallbackDataEXT *callback_data,

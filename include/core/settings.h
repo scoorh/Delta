@@ -9,6 +9,17 @@ namespace settings
     // ==================================================
     // application settings
     // ==================================================
+    namespace memory
+    {
+        inline u32 temporary_block_1_size = 0;
+        inline u32 temporary_block_2_size = 0;
+        inline u32 core_block_size = 0;
+    }
+
+
+    // ==================================================
+    // application settings
+    // ==================================================
     namespace application
     {
         inline c16 name_c16[32] = {};
@@ -26,6 +37,17 @@ namespace settings
                 u8 revision;
             };
         } version = {};
+    }
+
+
+    // ==================================================
+    // renderer settings
+    // ==================================================
+    namespace renderer
+    {
+        inline u32 device_id = 0;
+        inline u32 device_vendor_id = 0;
+        inline b8 vsync = false;
     }
 
 

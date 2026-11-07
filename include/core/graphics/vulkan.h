@@ -97,3 +97,4 @@ namespace vulkan
 // get function macros
 // ==================================================
 #define get_vulkan_instance_function(f) (PFN_##f)vulkan::vkGetInstanceProcAddr(renderer::vulkan_instance, #f)
+#define get_vulkan_device_function(f) (PFN_##f)vulkan::vkGetDeviceProcAddr(renderer::device, #f)

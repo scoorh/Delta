@@ -7,14 +7,34 @@ static void create_handle();
 static void create_vulkan_surface();
 
 
-namespace renderer
+namespace window
 {
-    void initialize_window()
+    void initialize()
     {
         get_instance();
         register_class();
         create_handle();
         create_vulkan_surface();
+    }
+
+
+    void show()
+    {
+        ShowWindow(renderer::window_handle, SW_SHOW);
+    }
+
+
+    b8 process_message()
+    {
+        MSG msg;
+        if (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
+        {
+            if (msg.message == WM_QUIT)
+                return true;
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+        return false;
     }
 }
 
@@ -126,7 +146,7 @@ static void create_vulkan_surface()
     create_info.hinstance = renderer::window_instance;
     create_info.hwnd = renderer::window_handle;
 
-    const VkResult result = vulkan::vkCreateWin32SurfaceKHR(renderer::vulkan_instance, &create_info, nullptr, &renderer::vulkan_surface);
+    const VkResult result = vulkan::vkCreateWin32SurfaceKHR(renderer::vulkan_instance, &create_info, nullptr, &renderer::window_surface);
     if (result)
     {
         logger::critical_error(logger::code::vkCreateWin32SurfaceKHR, result);
