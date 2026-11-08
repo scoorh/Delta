@@ -70,6 +70,12 @@ target_include_directories(Delta PRIVATE
 
 
 # ==================================================
+# PYTHON
+# ==================================================
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+
+# ==================================================
 # VULKAN
 # ==================================================
 find_package(Vulkan REQUIRED)
@@ -155,3 +161,31 @@ set_target_properties(Delta PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin/Debug"
         RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/Release"
 )
+
+
+# ==================================================
+# DEPENDENCIES
+# ==================================================
+set(MESH_OUT_DIR "${CMAKE_BINARY_DIR}/compiled_data/mesh")
+set(SHADER_OUT_DIR "${CMAKE_BINARY_DIR}/compiled_data/shader")
+
+add_custom_target(copy_meshes
+        COMMAND ${CMAKE_COMMAND}
+        "-DSOURCE_DIR=${CMAKE_SOURCE_DIR}/data/mesh"
+        "-DDEST_DIR=${MESH_OUT_DIR}"
+        -P "${CMAKE_SOURCE_DIR}/src/core/tools/copy_meshes.cmake"
+        COMMENT "Syncing mesh files"
+        VERBATIM
+)
+
+add_custom_target(compile_shaders
+        COMMAND ${CMAKE_COMMAND}
+        "-DSOURCE_DIR=${CMAKE_SOURCE_DIR}/data/shader"
+        "-DDEST_DIR=${SHADER_OUT_DIR}"
+        -P "${CMAKE_SOURCE_DIR}/src/core/tools/compile_shaders.cmake"
+        COMMENT "Compiling shaders"
+        VERBATIM
+)
+
+add_dependencies(Delta copy_meshes)
+add_dependencies(Delta compile_shaders)

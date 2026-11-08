@@ -11,6 +11,7 @@ namespace_re = re.compile(
     r'namespace\s+(\w+(?:::\w+)*)\s*\{(.*?)\}',
     re.DOTALL
 )
+
 constexpr_re = re.compile(
     r'constexpr\s+\w+\s+(\w+)\s*=\s*([0-9]+)\s*;'
 )
