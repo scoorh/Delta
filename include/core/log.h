@@ -75,6 +75,7 @@ namespace logger
         vkAllocateCommandBuffers_frame,
         vkCreateDescriptorPool_frame,
         vkAllocateDescriptorSets_frame,
+        create_frame_data_buffer,
 
         vkWaitForFences_frame,
         vkResetFences_frame,

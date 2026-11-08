@@ -14,14 +14,23 @@ namespace settings
         inline u32 temporary_block_1_size = 0;
         inline u32 temporary_block_2_size = 0;
         inline u32 core_block_size = 0;
+
         inline u32 buffer_resource_pool_size = 0;
         inline u32 image_resource_pool_size = 0;
         inline u32 image_sampler_resource_pool_size = 0;
         inline u32 shader_resource_pool_size = 0;
         inline u32 pipeline_resource_pool_size = 0;
         inline u32 material_resource_pool_size = 0;
+
         inline u32 gpu_block_array_size = 0;
         inline u32 free_allocation_array_size = 0;
+
+        inline u32 frame_mesh_indirect_draw_cmd_data_buffer_size = 0;
+        inline u32 frame_mesh_indirect_draw_cmd_buffer_size = 0;
+        inline u32 frame_mesh_instance_index_buffer_size = 0;
+        inline u32 frame_mesh_instance_buffer_size = 0;
+        inline u32 frame_material_buffer_size = 0;
+        inline u32 frame_ui_instance_buffer_size = 0;
     }
 
 

@@ -10,8 +10,10 @@ namespace renderer
 
     constexpr u32 max_swapchain_image_count = 4;
 
-    constexpr u32 interaction_buffer_image_id = 65000;
-    constexpr u32 depth_buffer_image_id = 65001;
+    constexpr u16 interaction_buffer_image_id = 65000;
+    constexpr u16 depth_buffer_image_id = 65001;
+    constexpr u16 frame_data_buffer_id = 65000;
+    constexpr u16 frame_data_buffer_id_N = 65005;
 }
 
 
@@ -52,6 +54,18 @@ namespace renderer
             VkDescriptorSet cull_mesh_array[resource::pipeline_layout::cull_mesh::descriptor_count];
             VkDescriptorSet draw_ui_array[resource::pipeline_layout::draw_ui::descriptor_count];
         } descriptor_set;
+
+        VkBuffer data_buffer;
+        struct
+        {
+            u32 frame_uniform;
+            u32 mesh_indirect_draw_cmds_data;
+            u32 mesh_indirect_draw_cmds;
+            u32 mesh_instance_indices;
+            u32 mesh_instances;
+            u32 materials;
+            u32 ui_instances;
+        } data_offset;
 
         VkFence work_completed;
         u32 acquired_swapchain_image_idx;

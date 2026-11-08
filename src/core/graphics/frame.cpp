@@ -1,19 +1,20 @@
 #include <core/types.h>
 
 
-static void create_semaphores(u32 frame_idx);
-static void create_fences(u32 frame_idx);
-static void create_command_pools(u32 frame_idx);
-static void create_command_buffers(u32 frame_idx);
-static void create_descriptor_pool(u32 frame_idx);
-static void create_descriptor_sets(u32 frame_idx);
+static void create_semaphores(u8 frame_idx);
+static void create_fences(u8 frame_idx);
+static void create_command_pools(u8 frame_idx);
+static void create_command_buffers(u8 frame_idx);
+static void create_descriptor_pool(u8 frame_idx);
+static void create_descriptor_sets(u8 frame_idx);
+static void create_data_buffer(u8 frame_idx);
 
 
 namespace renderer
 {
     void initialize_frames()
     {
-        for (u32 f = 0; f < frames_in_flight; ++f)
+        for (u8 f = 0; f < frames_in_flight; ++f)
         {
             create_semaphores(f);
             create_fences(f);
@@ -21,12 +22,13 @@ namespace renderer
             create_command_buffers(f);
             create_descriptor_pool(f);
             create_descriptor_sets(f);
+            create_data_buffer(f);
         }
     }
 }
 
 
-static void create_fences(const u32 frame_idx)
+static void create_fences(const u8 frame_idx)
 {
     constexpr u32 fence_count = 1;
     VkFence *dst[fence_count];
@@ -48,7 +50,7 @@ static void create_fences(const u32 frame_idx)
 }
 
 
-static void create_semaphores(const u32 frame_idx)
+static void create_semaphores(const u8 frame_idx)
 {
     constexpr u32 semaphore_count = 2;
     VkSemaphore *dst[semaphore_count];
@@ -70,7 +72,7 @@ static void create_semaphores(const u32 frame_idx)
 }
 
 
-static void create_command_pools(const u32 frame_idx)
+static void create_command_pools(const u8 frame_idx)
 {
     constexpr u32 command_pool_count = 1;
     struct
@@ -98,7 +100,7 @@ static void create_command_pools(const u32 frame_idx)
 }
 
 
-static void create_command_buffers(const u32 frame_idx)
+static void create_command_buffers(const u8 frame_idx)
 {
     constexpr u32 command_buffer_count = 1;
     struct
@@ -129,7 +131,7 @@ static void create_command_buffers(const u32 frame_idx)
 }
 
 
-static void create_descriptor_pool(const u32 frame_idx)
+static void create_descriptor_pool(const u8 frame_idx)
 {
     constexpr u32 max_sets = 5;
     constexpr u32 sizes_count = 4;
@@ -174,7 +176,7 @@ static void create_descriptor_pool(const u32 frame_idx)
 }
 
 
-static void create_descriptor_sets(const u32 frame_idx)
+static void create_descriptor_sets(const u8 frame_idx)
 {
     VkDescriptorSetAllocateInfo allocate_info = {};
     allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -222,4 +224,68 @@ static void create_descriptor_sets(const u32 frame_idx)
 
     renderer::frames[frame_idx].descriptor_set.cull_mesh_array[resource::pipeline_layout::cull_mesh::frame_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.frame_data;
     renderer::frames[frame_idx].descriptor_set.cull_mesh_array[resource::pipeline_layout::cull_mesh::mesh_cull_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.mesh_cull_data;
+}
+
+
+static void create_data_buffer(const u8 frame_idx)
+{
+    constexpr u32 total_offset_count = 7;
+    struct _offsets_t
+    {
+        u32 *dst_offset;
+        u32 memory_size;
+    } offsets[total_offset_count];
+
+
+    u32 total_buffer_size = 0;
+
+
+    constexpr u32 uniform_alignment_count = 1;
+    offsets[0].dst_offset = &renderer::frames[frame_idx].data_offset.frame_uniform;
+    offsets[0].memory_size = sizeof(resource::shader::frame_uniform_t);
+
+    for (u32 i = 0; i < uniform_alignment_count; ++i)
+    {
+        total_buffer_size = memory::align_to_alignment(total_buffer_size, gpu_info::limit->min_uniform_buffer_offset_alignment);
+        *offsets[i].dst_offset = total_buffer_size;
+        total_buffer_size += offsets[i].memory_size;
+    }
+
+
+    offsets[1].dst_offset = &renderer::frames[frame_idx].data_offset.mesh_indirect_draw_cmds_data;
+    offsets[1].memory_size = settings::memory::frame_mesh_indirect_draw_cmd_data_buffer_size;
+    offsets[2].dst_offset = &renderer::frames[frame_idx].data_offset.mesh_indirect_draw_cmds;
+    offsets[2].memory_size = settings::memory::frame_mesh_indirect_draw_cmd_buffer_size;
+    offsets[3].dst_offset = &renderer::frames[frame_idx].data_offset.mesh_instance_indices;
+    offsets[3].memory_size = settings::memory::frame_mesh_instance_index_buffer_size;
+    offsets[4].dst_offset = &renderer::frames[frame_idx].data_offset.mesh_instances;
+    offsets[4].memory_size = settings::memory::frame_mesh_instance_buffer_size;
+    offsets[5].dst_offset = &renderer::frames[frame_idx].data_offset.materials;
+    offsets[5].memory_size = settings::memory::frame_material_buffer_size;
+    offsets[6].dst_offset = &renderer::frames[frame_idx].data_offset.ui_instances;
+    offsets[6].memory_size = settings::memory::frame_ui_instance_buffer_size;
+
+    for (u32 i = uniform_alignment_count; i < total_offset_count; ++i)
+    {
+        total_buffer_size = memory::align_to_alignment(total_buffer_size, gpu_info::limit->min_storage_buffer_offset_alignment);
+        *offsets[i].dst_offset = total_buffer_size;
+        total_buffer_size += offsets[i].memory_size;
+    }
+
+
+    resource::buffer::setup_t buffer_setup = {};
+    buffer_setup.id = renderer::frame_data_buffer_id + frame_idx;
+    buffer_setup.size = total_buffer_size;
+    buffer_setup.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    buffer_setup.gpu_local_memory = true;
+
+    const auto buffer = resource::buffer::create(&buffer_setup);
+    if (buffer == nullptr)
+    {
+        logger::critical_error(logger::code::create_frame_data_buffer, 0);
+        return;
+    }
+
+    renderer::frames[frame_idx].data_buffer = buffer->handle;
+    buffer->used = total_buffer_size;
 }

@@ -7,6 +7,37 @@
 namespace resource
 {
     // ==================================================
+    // shader types
+    // ==================================================
+    namespace shader
+    {
+        // ==================================================
+        // frame uniform
+        // ==================================================
+        struct frame_uniform_t
+        {
+            math::matrix4x4_t view;
+            math::matrix4x4_t projection;
+            math::matrix4x4_t view_projection;
+            union {
+                math::vector4_t packed0;
+                struct {
+                    struct {
+                        f32 width;
+                        f32 height;
+                    } viewport_size;
+                    struct {
+                        f32 width;
+                        f32 height;
+                    } ndc_scale;
+                };
+            };
+        };
+        static_assert(sizeof(frame_uniform_t) % 16 == 0);
+    }
+
+
+    // ==================================================
     // descriptor set layout
     // ==================================================
     namespace descriptor_set_layout

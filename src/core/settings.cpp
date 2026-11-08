@@ -8,14 +8,23 @@ namespace settings
         memory::temporary_block_1_size = 2 << 20;
         memory::temporary_block_2_size = 2 << 20;
         memory::core_block_size = 2 << 20;
+
         memory::buffer_resource_pool_size = 128;
         memory::image_resource_pool_size = 128;
         memory::image_sampler_resource_pool_size = 128;
         memory::shader_resource_pool_size = 128;
         memory::pipeline_resource_pool_size = 128;
         memory::material_resource_pool_size = 128;
+
         memory::gpu_block_array_size = 128;
         memory::free_allocation_array_size = 128;
+
+        memory::frame_mesh_indirect_draw_cmd_data_buffer_size = 2 << 20;
+        memory::frame_mesh_indirect_draw_cmd_buffer_size = 2 << 20;
+        memory::frame_mesh_instance_index_buffer_size = 2 << 20;
+        memory::frame_mesh_instance_buffer_size = 2 << 20;
+        memory::frame_material_buffer_size = 2 << 20;
+        memory::frame_ui_instance_buffer_size = 2 << 20;
 
         application::version.major = 1;
         application::version.minor = 1;

@@ -97,7 +97,7 @@ static void create_swapchain_views()
 static void create_other_attachments()
 {
     resource::image_t *image;
-    resource::image::setup_t image_setup;
+    resource::image::setup_t image_setup = {};
 
     image_setup.gpu_local_memory = true;
     image_setup.width = renderer::window_width;
