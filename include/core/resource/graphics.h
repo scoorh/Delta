@@ -11,17 +11,20 @@ namespace resource
     // ==================================================
     namespace buffer
     {
-        struct setup_t {
+        struct setup_t
+        {
             u16 id;
             b8 gpu_local_memory;
             b8 _pad0;
             u32 size;
             VkBufferUsageFlags usage;
         };
+
         static_assert(offsetof(setup_t, id) == 0);
         static_assert(sizeof(setup_t) % 4 == 0);
         static_assert(sizeof(setup_t::usage) == sizeof(u32));
     }
+
 
     struct buffer_t
     {
@@ -49,12 +52,14 @@ namespace resource
             VkImageUsageFlags usage;
             VkImageAspectFlags aspect;
         };
+
         static_assert(offsetof(setup_t, id) == 0);
         static_assert(sizeof(setup_t) % 4 == 0);
         static_assert(sizeof(setup_t::usage) == sizeof(u32));
         static_assert(sizeof(setup_t::format) == sizeof(u32));
         static_assert(sizeof(setup_t::aspect) == sizeof(u32));
     }
+
 
     struct image_t
     {
@@ -71,7 +76,8 @@ namespace resource
     // ==================================================
     namespace image_sampler
     {
-        struct setup_t {
+        struct setup_t
+        {
             u16 id;
             u16 _pad0;
             VkFilter min_filter;
@@ -79,6 +85,7 @@ namespace resource
             VkSamplerMipmapMode mipmap_mode;
             VkSamplerAddressMode address_mode;
         };
+
         static_assert(offsetof(setup_t, id) == 0);
         static_assert(sizeof(setup_t) % 4 == 0);
         static_assert(sizeof(setup_t::min_filter) == sizeof(u32));
@@ -86,6 +93,7 @@ namespace resource
         static_assert(sizeof(setup_t::mipmap_mode) == sizeof(u32));
         static_assert(sizeof(setup_t::address_mode) == sizeof(u32));
     }
+
 
     struct image_sampler_t
     {
@@ -106,9 +114,11 @@ namespace resource
             u32 code_size;
             u32 package_data_offset;
         };
+
         static_assert(offsetof(setup_t, id) == 0);
         static_assert(sizeof(setup_t) % 4 == 0);
     }
+
 
     struct shader_t
     {
@@ -130,16 +140,22 @@ namespace resource
             u16 id;
             b8 is_compute;
             b8 primitive_restart_enabled;
-            union {
-                struct {
+
+            union
+            {
+                struct
+                {
                     u16 compute_shader_id;
                     u16 _pad1;
                 };
-                struct {
+
+                struct
+                {
                     u16 vertex_shader_id;
                     u16 fragment_shader_id;
                 };
             };
+
             VkPrimitiveTopology primitive_topology;
             VkPolygonMode polygon_mode;
             VkCullModeFlags cull_mode;
@@ -149,6 +165,7 @@ namespace resource
             u8 layout_idx;
             u8 _pad0;
         };
+
         static_assert(offsetof(setup_t, id) == 0);
         static_assert(sizeof(setup_t) % 4 == 0);
         static_assert(sizeof(setup_t::primitive_topology) == sizeof(u32));
@@ -156,6 +173,7 @@ namespace resource
         static_assert(sizeof(setup_t::cull_mode) == sizeof(u32));
         static_assert(sizeof(setup_t::front_face) == sizeof(u32));
     }
+
 
     struct pipeline_t
     {
@@ -175,9 +193,11 @@ namespace resource
             u16 _pad0;
             u32 color;
         };
+
         static_assert(offsetof(setup_t, id) == 0);
         static_assert(sizeof(setup_t) % 4 == 0);
     }
+
 
     struct material_t
     {
@@ -191,9 +211,9 @@ namespace resource
 // ==================================================
 namespace resource::material
 {
-    material_t* create(const setup_t* setup);
-    void destroy(material_t* material);
-    material_t* find(u16 id);
+    material_t *create(const setup_t *setup);
+    void destroy(material_t *material);
+    material_t *find(u16 id);
 }
 
 
@@ -202,9 +222,9 @@ namespace resource::material
 // ==================================================
 namespace resource::buffer
 {
-    buffer_t* create(const setup_t* setup);
-    void destroy(buffer_t* buffer);
-    buffer_t* find(u16 id);
+    buffer_t *create(const setup_t *setup);
+    void destroy(buffer_t *buffer);
+    buffer_t *find(u16 id);
 }
 
 
@@ -213,9 +233,9 @@ namespace resource::buffer
 // ==================================================
 namespace resource::image
 {
-    image_t* create(const setup_t* setup);
-    void destroy(image_t* image);
-    image_t* find(u16 id);
+    image_t *create(const setup_t *setup);
+    void destroy(image_t *image);
+    image_t *find(u16 id);
 }
 
 
@@ -224,9 +244,9 @@ namespace resource::image
 // ==================================================
 namespace resource::image_sampler
 {
-    image_sampler_t* create(const setup_t* setup);
-    void destroy(image_sampler_t* image_sampler);
-    image_sampler_t* find(u16 id);
+    image_sampler_t *create(const setup_t *setup);
+    void destroy(image_sampler_t *image_sampler);
+    image_sampler_t *find(u16 id);
 }
 
 
@@ -235,9 +255,9 @@ namespace resource::image_sampler
 // ==================================================
 namespace resource::shader
 {
-    shader_t* create(const setup_t* setup, const u32* spirv_code);
-    void destroy(shader_t* shader);
-    shader_t* find(u16 id);
+    shader_t *create(const setup_t *setup, const u32 *spirv_code);
+    void destroy(shader_t *shader);
+    shader_t *find(u16 id);
     VkShaderModule find_module(u16 id);
 }
 
@@ -247,9 +267,9 @@ namespace resource::shader
 // ==================================================
 namespace resource::pipeline
 {
-    pipeline_t* create(const setup_t* setup, const VkShaderModule* shader_module_array);
-    void destroy(pipeline_t* pipeline);
-    pipeline_t* find(u16 id);
+    pipeline_t *create(const setup_t *setup, const VkShaderModule *shader_module_array);
+    void destroy(pipeline_t *pipeline);
+    pipeline_t *find(u16 id);
 }
 
 

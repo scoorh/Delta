@@ -19,21 +19,190 @@ namespace resource
             math::matrix4x4_t view;
             math::matrix4x4_t projection;
             math::matrix4x4_t view_projection;
-            union {
+
+            union
+            {
                 math::vector4_t packed0;
-                struct {
-                    struct {
+
+                struct
+                {
+                    struct
+                    {
                         f32 width;
                         f32 height;
                     } viewport_size;
-                    struct {
+
+                    struct
+                    {
                         f32 width;
                         f32 height;
                     } ndc_scale;
                 };
             };
         };
+
         static_assert(sizeof(frame_uniform_t) % 16 == 0);
+
+
+        // ==================================================
+        // material
+        // ==================================================
+        struct material_t
+        {
+            u32 color;
+            u32 _pad0;
+            u32 _pad1;
+            u32 _pad2;
+        };
+
+        static_assert(sizeof(material_t) % 16 == 0);
+
+
+        // ==================================================
+        // mesh instance
+        // ==================================================
+        struct mesh_instance_t
+        {
+            union
+            {
+                math::vector4_t packed0;
+
+                struct
+                {
+                    f32 world_matrix_c0_x;
+                    f32 world_matrix_c1_x;
+                    f32 world_matrix_c2_x;
+                    f32 world_matrix_c3_x;
+                };
+            };
+
+            union
+            {
+                math::vector4_t packed1;
+
+                struct
+                {
+                    f32 world_matrix_c0_y;
+                    f32 world_matrix_c1_y;
+                    f32 world_matrix_c2_y;
+                    f32 world_matrix_c3_y;
+                };
+            };
+
+            union
+            {
+                math::vector4_t packed2;
+
+                struct
+                {
+                    f32 world_matrix_c0_z;
+                    f32 world_matrix_c1_z;
+                    f32 world_matrix_c2_z;
+                    f32 world_matrix_c3_z;
+                };
+            };
+
+            union
+            {
+                u32 packed3;
+
+                struct
+                {
+                    u16 position_vertex_ssbo_idx;
+                    u16 attribute_vertex_ssbo_idx;
+                };
+            };
+
+            union
+            {
+                u32 packed4;
+
+                struct
+                {
+                    u16 material_idx;
+                    u16 interaction_id;
+                };
+            };
+
+            u32 _pad2;
+            u32 _pad3;
+        };
+
+        static_assert(sizeof(mesh_instance_t) % 16 == 0);
+
+
+        // ==================================================
+        // ui instance
+        // ==================================================
+        struct ui_instance_t
+        {
+            union
+            {
+                math::vector4_t packed0;
+
+                struct
+                {
+                    f32 position_x;
+                    f32 position_y;
+                    f32 width;
+                    f32 height;
+                };
+            };
+
+            union
+            {
+                u32 packed1;
+
+                struct
+                {
+                    u16 interaction_id;
+                    u16 _pad0;
+                };
+            };
+
+            u32 _pad1;
+            u32 _pad3;
+            u32 _pad2;
+        };
+
+        static_assert(sizeof(ui_instance_t) % 16 == 0);
+
+
+        // ==================================================
+        // mesh indirect draw cmd
+        // ==================================================
+        struct mesh_indirect_draw_cmd_t
+        {
+            u32 index_count;
+            u32 instance_count;
+            u32 first_index;
+            u32 vertex_offset;
+            u32 first_instance;
+        };
+
+        static_assert(sizeof(mesh_indirect_draw_cmd_t) % 4 == 0);
+
+
+        // ==================================================
+        // mesh indirect draw cmd data
+        // ==================================================
+        struct mesh_indirect_draw_cmd_data_t
+        {
+            u32 initial_instance_count;
+        };
+
+        static_assert(sizeof(mesh_indirect_draw_cmd_data_t) % 4 == 0);
+
+
+        // ==================================================
+        // mesh instance index
+        // ==================================================
+        struct mesh_instance_index_t
+        {
+            u32 index;
+        };
+
+        static_assert(sizeof(mesh_instance_index_t) % 4 == 0);
     }
 
 
