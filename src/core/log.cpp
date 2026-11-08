@@ -3,6 +3,25 @@
 
 namespace logger
 {
+    void error(code code, const c8* identifier)
+    {
+        //
+        // TODO: ..
+        //
+        c8 message[256];
+        snprintf(
+            message,
+            sizeof(message),
+            "Application encountered critical error and cannot continue - error code = %u / %s",
+            (u32)code,
+            identifier
+        );
+
+        MessageBoxA(nullptr, message, "Critical Error", MB_OK | MB_ICONERROR);
+        ExitProcess((u32)code);
+    }
+
+
     void error(const code code, const s32 identifier)
     {
         //

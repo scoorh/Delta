@@ -203,6 +203,58 @@ namespace resource
     {
         u32 color;
     };
+
+
+    // ==================================================
+    // mesh
+    // ==================================================
+    namespace mesh
+    {
+        struct setup_t
+        {
+            u16 id;
+            u8 position_vertex_size;
+            u8 attribute_vertex_size;
+            u16 position_vertex_buffer_id;
+            u16 attribute_vertex_buffer_id;
+            u16 index_buffer_id;
+            u8 index_size;
+            u8 _pad0;
+            u16 vertex_count;
+            u16 index_count;
+            u32 package_data_offset;
+        };
+
+        static_assert(offsetof(setup_t, id) == 0);
+        static_assert(sizeof(setup_t) % 4 == 0);
+    }
+
+    struct mesh_t {
+        VkBuffer index_buffer;
+        VkBuffer position_vertex_buffer;
+        VkBuffer attribute_vertex_buffer;
+        u16 vertex_count;
+        u16 index_count;
+        u32 first_index;
+        u32 first_vertex;
+        u16 position_vertex_ssbo_idx;
+        u16 attribute_vertex_ssbo_idx;
+        u32 index_buffer_offset;
+        u32 position_vertex_buffer_offset;
+        u32 attribute_vertex_buffer_offset;
+    };
+
+}
+
+
+// ==================================================
+// mesh functions
+// ==================================================
+namespace resource::mesh
+{
+    mesh_t *create(const setup_t *setup);
+    void destroy(mesh_t *mesh);
+    mesh_t *find(u16 id);
 }
 
 
@@ -225,6 +277,9 @@ namespace resource::buffer
     buffer_t *create(const setup_t *setup);
     void destroy(buffer_t *buffer);
     buffer_t *find(u16 id);
+
+    b8 reserve_space(buffer_t* buffer, u32 size, u32* offset);
+    void reset_to_offset(buffer_t* buffer, u32 offset);
 }
 
 
@@ -284,6 +339,7 @@ namespace resource
     inline memory::resource_pool_id16_t shaders = {};
     inline memory::resource_pool_id16_t pipelines = {};
     inline memory::resource_pool_id16_t materials = {};
+    inline memory::resource_pool_id16_t meshes = {};
     inline descriptor_set_layout_t descriptor_set_layouts = {};
     inline pipeline_layout_t pipeline_layouts = {};
 }

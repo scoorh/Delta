@@ -17,10 +17,12 @@ namespace logger
         initialize_shader_resource_pool,
         initialize_pipeline_resource_pool,
         initialize_material_resource_pool,
+        initialize_mesh_resource_pool,
         initialize_gpu_block_array,
         initialize_free_allocation_array,
         initialize_gpu_block,
         allocate_from_image_resource_pool,
+        allocate_from_mesh_resource_pool,
         allocate_from_shader_resource_pool,
         allocate_from_buffer_resource_pool,
         allocate_from_material_resource_pool,
@@ -29,6 +31,8 @@ namespace logger
         allocate_from_free_allocation_array,
         allocate_from_gpu_block_array,
         invalid_gpu_memory_type,
+
+        open_resource_package,
 
         vkCreateImage,
         vkCreateImageView,
@@ -52,6 +56,12 @@ namespace logger
         vkCreatePipelineLayout_draw_mesh,
         vkCreatePipelineLayout_draw_ui,
         vkCreatePipelineLayout_cull_mesh,
+        missing_index_buffer,
+        missing_position_vertex_buffer,
+        missing_attribute_vertex_buffer,
+        reserve_index_buffer_space,
+        reserve_position_vertex_buffer_space,
+        reserve_attribute_vertex_buffer_space,
 
         load_vulkan_dll,
 
@@ -102,6 +112,7 @@ namespace logger
 // ==================================================
 namespace logger
 {
+    void error(code code, const c8* identifier);
     void error(code code, s32 identifier);
     void error(code code, u32 identifier);
     void critical_error(code code, u32 identifier);

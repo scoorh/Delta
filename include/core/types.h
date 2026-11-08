@@ -82,3 +82,4 @@ static_assert(sizeof(b8) == 1);
 #include <core/graphics/gpu_info.h>
 #include <core/graphics/renderer.h>
 #include <core/file.h>
+#include <core/metadata.h>

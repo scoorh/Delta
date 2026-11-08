@@ -59,6 +59,23 @@ namespace resource::buffer
     {
         return memory::resource_pool::find<buffer_t>(&buffers, id);
     }
+
+
+    b8 reserve_space(buffer_t* buffer, const u32 size, u32* offset)
+    {
+        if (buffer->used + size < buffer->allocation.size) {
+            *offset = buffer->used;
+            buffer->used += size;
+            return true;
+        }
+        return false;
+    }
+
+
+    void reset_to_offset(buffer_t* buffer, const u32 offset)
+    {
+        buffer->used = offset;
+    }
 }
 
 

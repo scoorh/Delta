@@ -22,7 +22,7 @@ namespace file
     {
         base_t base;
 
-        struct
+        struct header_t
         {
             u16 buffer_count;
             u16 mesh_count;
@@ -43,6 +43,16 @@ namespace file
         } header;
     };
     static_assert(sizeof(resource_package_t::header) % 4 == 0);
+}
+
+
+// ==================================================
+// resource package functions
+// ==================================================
+namespace file::resource_package
+{
+    b8 open(resource_package_t* f, const c8* filename);
+    void close(resource_package_t* f);
 }
 
 

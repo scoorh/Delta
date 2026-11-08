@@ -58,6 +58,9 @@ add_executable(Delta ${SOURCES}
         src/core/math/matrix4x4.cpp
         src/core/math/vector4.cpp
         src/core/math/quaternion.cpp
+        src/core/file/resource_package.cpp
+        include/core/metadata.h
+        src/core/resource/mesh.cpp
 )
 
 
