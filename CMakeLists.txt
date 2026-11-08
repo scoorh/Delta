@@ -55,6 +55,9 @@ add_executable(Delta ${SOURCES}
         src/core/file/base.cpp
         include/core/math.h
         src/core/resource/material.cpp
+        src/core/math/matrix4x4.cpp
+        src/core/math/vector4.cpp
+        src/core/math/quaternion.cpp
 )
 
 

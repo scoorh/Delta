@@ -49,6 +49,24 @@ namespace math
 
 
     // ==================================================
+    // quaternion
+    // ==================================================
+    union quaternion_t
+    {
+        struct
+        {
+            f32 w;
+            f32 x;
+            f32 y;
+            f32 z;
+        };
+
+        f32 array[4];
+        __m128 sse;
+    };
+
+
+    // ==================================================
     // matrix4x4
     // ==================================================
     union matrix4x4_t
@@ -68,10 +86,83 @@ namespace math
 
 
 // ==================================================
+// vector4 functions
+// ==================================================
+namespace math::quaternion
+{
+    void from_euler(quaternion_t *o, f32 pitch, f32 yaw, f32 roll);
+}
+
+
+// ==================================================
+// vector4 functions
+// ==================================================
+namespace math::vector4
+{
+    void zero(vector4_t* o);
+
+    f32 dot(vector4_t *a, vector4_t *b);
+    void cross(vector4_t* o, vector4_t *a, vector4_t *b);
+
+    void normalize(vector4_t* o, vector4_t *a);
+
+    void add(vector4_t* o, const vector4_t *a, const vector4_t *b);
+    void add(vector4_t* o, const vector4_t *a, f32 v);
+
+    void subtract(vector4_t* o, const vector4_t *a, const vector4_t *b);
+    void subtract(vector4_t* o, const vector4_t *a, f32 v);
+
+    void multiply(vector4_t* o, const vector4_t *a, const vector4_t *b);
+    void multiply(vector4_t* o, const vector4_t *a, f32 v);
+}
+
+
+// ==================================================
+// matrix4x4 functions
+// ==================================================
+namespace math::matrix4x4
+{
+    void zero(matrix4x4_t* o);
+    void identity(matrix4x4_t* o);
+
+    void translation(matrix4x4_t *o, f32 x, f32 y, f32 z);
+    void scaling(matrix4x4_t *o, f32 x, f32 y, f32 z);
+    void rotation(matrix4x4_t *o, const quaternion_t *q);
+    void world_transform(matrix4x4_t *o, f32 tx, f32 ty, f32 tz, f32 sx, f32 sy, f32 sz, const quaternion_t *q);
+
+    void perspective(matrix4x4_t *o, f32 aspect_ratio, f32 field_of_view, f32 near_z, f32 far_z);
+
+    void look_at(matrix4x4_t *o, f32 ex, f32 ey, f32 ez, f32 tx, f32 ty, f32 tz, f32 ux, f32 uy, f32);
+    void look_at(matrix4x4_t *o, const vector4_t *from, const quaternion_t *q);
+    void look_at(matrix4x4_t *o, f32 ex, f32 ey, f32 ez, const quaternion_t *q);
+
+    void multiply(matrix4x4_t *o, const matrix4x4_t *a, const matrix4x4_t *b);
+}
+
+
+// ==================================================
 // math functions
 // ==================================================
 namespace math
 {
+    inline f32 tan(const f32 v)
+    {
+        return ::tanf(v);
+    }
+
+
+    inline f32 cos(const f32 v)
+    {
+        return ::cosf(v);
+    }
+
+
+    inline f32 sin(const f32 v)
+    {
+        return ::sinf(v);
+    }
+
+
     inline f32 seconds_to_miliseconds(const f32 s)
     {
         return s * 1000.0f;

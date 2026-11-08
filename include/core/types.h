@@ -64,6 +64,7 @@ static_assert(sizeof(b8) == 1);
 #include <immintrin.h>
 #include <avxintrin.h>
 #include <cstdio>
+#include <cmath>
 #ifndef NDEBUG
 #include <cassert>
 #endif

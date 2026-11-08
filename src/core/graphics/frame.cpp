@@ -8,6 +8,7 @@ static void create_command_buffers(u8 frame_idx);
 static void create_descriptor_pool(u8 frame_idx);
 static void create_descriptor_sets(u8 frame_idx);
 static void create_data_buffer(u8 frame_idx);
+static void update_descriptor_sets(u8 frame_idx);
 
 
 namespace renderer
@@ -23,6 +24,7 @@ namespace renderer
             create_descriptor_pool(f);
             create_descriptor_sets(f);
             create_data_buffer(f);
+            update_descriptor_sets(f);
         }
     }
 }
@@ -288,4 +290,89 @@ static void create_data_buffer(const u8 frame_idx)
 
     renderer::frames[frame_idx].data_buffer = buffer->handle;
     buffer->used = total_buffer_size;
+}
+
+
+static void update_descriptor_sets(const u8 frame_idx)
+{
+    constexpr uint32_t write_count = 9;
+    VkDescriptorBufferInfo descriptor_buffer_info[write_count] = {};
+    VkWriteDescriptorSet descriptor_write[write_count] = {};
+
+    for (u32 i = 0; i < write_count; ++i)
+    {
+        descriptor_buffer_info[i].buffer = renderer::frames[frame_idx].data_buffer;
+        descriptor_write[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptor_write[i].pBufferInfo = &descriptor_buffer_info[i];;
+    }
+
+
+    descriptor_buffer_info[0].offset = renderer::frames[frame_idx].data_offset.frame_uniform;
+    descriptor_buffer_info[0].range = sizeof(resource::shader::frame_uniform_t);
+    descriptor_write[0].dstSet = renderer::frames[frame_idx].descriptor_set.frame_data;
+    descriptor_write[0].dstBinding = resource::descriptor_set_layout::frame_data::uniform_binding_idx;
+    descriptor_write[0].descriptorCount = 1;
+    descriptor_write[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+
+    descriptor_buffer_info[1].offset = renderer::frames[frame_idx].data_offset.mesh_indirect_draw_cmds_data;
+    descriptor_buffer_info[1].range = settings::memory::frame_mesh_indirect_draw_cmd_data_buffer_size;
+    descriptor_write[1].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_cull_data;
+    descriptor_write[1].dstBinding = resource::descriptor_set_layout::mesh_cull_data::indirect_draw_cmd_data_binding_idx;
+    descriptor_write[1].descriptorCount = 1;
+    descriptor_write[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+    descriptor_buffer_info[2].offset = renderer::frames[frame_idx].data_offset.mesh_indirect_draw_cmds;
+    descriptor_buffer_info[2].range = settings::memory::frame_mesh_indirect_draw_cmd_buffer_size;
+    descriptor_write[2].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_cull_data;
+    descriptor_write[2].dstBinding = resource::descriptor_set_layout::mesh_cull_data::indirect_draw_cmd_binding_idx;
+    descriptor_write[2].descriptorCount = 1;
+    descriptor_write[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+    descriptor_buffer_info[3].offset = renderer::frames[frame_idx].data_offset.mesh_instance_indices;
+    descriptor_buffer_info[3].range = settings::memory::frame_mesh_instance_index_buffer_size;
+    descriptor_write[3].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_cull_data;
+    descriptor_write[3].dstBinding = resource::descriptor_set_layout::mesh_cull_data::instance_indices_binding_idx;
+    descriptor_write[3].descriptorCount = 1;
+    descriptor_write[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+    descriptor_buffer_info[4].offset = renderer::frames[frame_idx].data_offset.mesh_instances;
+    descriptor_buffer_info[4].range = settings::memory::frame_mesh_instance_buffer_size;
+    descriptor_write[4].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_cull_data;
+    descriptor_write[4].dstBinding = resource::descriptor_set_layout::mesh_cull_data::instances_binding_idx;
+    descriptor_write[4].descriptorCount = 1;
+    descriptor_write[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+
+    descriptor_buffer_info[5].offset = renderer::frames[frame_idx].data_offset.mesh_instance_indices;
+    descriptor_buffer_info[5].range = settings::memory::frame_mesh_instance_index_buffer_size;
+    descriptor_write[5].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_data;
+    descriptor_write[5].dstBinding = resource::descriptor_set_layout::mesh_data::instance_indices_binding_idx;
+    descriptor_write[5].descriptorCount = 1;
+    descriptor_write[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+    descriptor_buffer_info[6].offset = renderer::frames[frame_idx].data_offset.mesh_instances;
+    descriptor_buffer_info[6].range = settings::memory::frame_mesh_instance_buffer_size;
+    descriptor_write[6].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_data;
+    descriptor_write[6].dstBinding = resource::descriptor_set_layout::mesh_data::instances_binding_idx;
+    descriptor_write[6].descriptorCount = 1;
+    descriptor_write[6].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+    descriptor_buffer_info[7].offset = renderer::frames[frame_idx].data_offset.materials;
+    descriptor_buffer_info[7].range = settings::memory::frame_material_buffer_size;
+    descriptor_write[7].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_data;
+    descriptor_write[7].dstBinding = resource::descriptor_set_layout::mesh_data::materials_binding_idx;
+    descriptor_write[7].descriptorCount = 1;
+    descriptor_write[7].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+
+    descriptor_buffer_info[8].offset = renderer::frames[frame_idx].data_offset.ui_instances;
+    descriptor_buffer_info[8].range = settings::memory::frame_ui_instance_buffer_size;
+    descriptor_write[8].dstSet = renderer::frames[frame_idx].descriptor_set.ui_data;
+    descriptor_write[8].dstBinding = resource::descriptor_set_layout::ui_data::instances_binding_idx;
+    descriptor_write[8].descriptorCount = 1;
+    descriptor_write[8].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+
+    vulkan::vkUpdateDescriptorSets(renderer::device, write_count, descriptor_write, 0, nullptr);
 }
