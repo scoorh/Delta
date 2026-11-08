@@ -51,6 +51,8 @@ add_executable(Delta ${SOURCES}
         src/core/resource/pipeline_layout.cpp
         src/core/resource/descriptor_set_layout.cpp
         include/core/resource/shader.h
+        include/core/file.h
+        src/core/file.cpp
 )
 
 
