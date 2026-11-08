@@ -13,7 +13,7 @@ namespace resource::shader
             return shader;
 
 
-        shader = memory::resource_pool::allocate<shader_t>(&memory::shaders, setup->id);
+        shader = memory::resource_pool::allocate<shader_t>(&shaders, setup->id);
         if (!shader)
         {
             logger::error(logger::code::allocate_from_shader_resource_pool, setup->id);
@@ -41,13 +41,13 @@ namespace resource::shader
         {
             vulkan::vkDestroyShaderModule(renderer::device, shader->handle, nullptr);
         }
-        memory::resource_pool::free(&memory::shaders, shader);
+        memory::resource_pool::free(&shaders, shader);
     }
 
 
     shader_t *find(const u16 id)
     {
-        return memory::resource_pool::find<shader_t>(&memory::shaders, id);
+        return memory::resource_pool::find<shader_t>(&shaders, id);
     }
 
 

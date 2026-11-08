@@ -46,6 +46,11 @@ add_executable(Delta ${SOURCES}
         src/core/resource/image_sampler.cpp
         src/core/memory/gpu_block.cpp
         src/core/memory/array.cpp
+        src/core/resource/pipeline.cpp
+        src/core/resource/buffer.cpp
+        src/core/resource/pipeline_layout.cpp
+        src/core/resource/descriptor_set_layout.cpp
+        include/core/resource/shader.h
 )
 
 

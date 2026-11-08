@@ -71,6 +71,7 @@ namespace memory
             VkDeviceMemory gpu_block;
         };
 
+        u32 type;
         u32 offset;
         u32 size;
         u32 alignment_padding;
@@ -86,7 +87,7 @@ namespace memory::array
     b8 initialize(array_t *p, u32 data_stride, u32 container_size, PFN_allocate_function allocate_function);
 
     void *allocate(array_t *p);
-
+    void free(array_t* p, u32 idx);
     void *find(const array_t *p, u32 idx);
 
 
@@ -165,6 +166,7 @@ namespace memory::resource_pool
 namespace memory::linear_block
 {
     b8 initialize(linear_block_t *ptr, u32 size, PFN_allocate_function allocate_function);
+
     void *allocate(linear_block_t *ptr, u32 size);
     void free(linear_block_t *ptr, u32 size);
     void reset(linear_block_t *ptr);
@@ -179,12 +181,8 @@ namespace memory
     inline linear_block_t temporary_block_1 = {};
     inline linear_block_t temporary_block_2 = {};
     inline linear_block_t core_block = {};
-    inline resource_pool_id16_t buffers = {};
-    inline resource_pool_id16_t images = {};
-    inline resource_pool_id16_t image_samplers = {};
-    inline resource_pool_id16_t shaders = {};
-    inline resource_pool_id16_t pipelines = {};
     inline array_t gpu_blocks = {};
+    inline array_t free_allocations = {};
 }
 
 
@@ -196,7 +194,8 @@ namespace memory
     void initialize();
 
     b8 allocate_from_gpu(const VkMemoryRequirements *requirements, allocation_t *allocation, b8 gpu_local_memory);
-    void free_to_gpu(allocation_t *allocation);
+
+    void free(const allocation_t *allocation);
 
     void *allocate_from_heap(u32 size);
     void *allocate_from_temporary_block_1(u32 size);

@@ -73,6 +73,7 @@ static_assert(sizeof(b8) == 1);
 #include <core/log.h>
 #include <core/settings.h>
 #include <core/window.h>
+#include <core/resource/shader.h>
 #include <core/resource/graphics.h>
 #include <core/graphics/vulkan.h>
 #include <core/graphics/gpu_info.h>

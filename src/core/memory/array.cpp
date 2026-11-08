@@ -25,6 +25,20 @@ namespace memory::array
     }
 
 
+    void free(array_t* p, const u32 idx)
+    {
+        if (p->used <= idx)
+            return;
+
+        --p->used;
+
+        const c8* src = p->data + p->used * p->data_stride;
+        c8* dst = p->data + idx * p->data_stride;
+
+        copy_memory(dst, src, p->data_stride);
+    }
+
+
     void *find(const array_t* p, const u32 idx)
     {
         if (idx > p->used)

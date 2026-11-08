@@ -23,12 +23,12 @@ namespace renderer
     inline HWND window_handle = nullptr;
     inline HINSTANCE window_instance = nullptr;
     inline VkInstance vulkan_instance = nullptr;
+    inline VkSurfaceKHR window_surface = nullptr;
 
     inline u32 current_frame = 0;
 
     inline u16 window_width = 0;
     inline u16 window_height = 0;
-    inline VkSurfaceKHR window_surface = nullptr;
     inline VkSwapchainKHR swapchain = nullptr;
     inline u32 swapchain_image_count = 0;
     inline VkImage swapchain_image_array[max_swapchain_image_count] = {};

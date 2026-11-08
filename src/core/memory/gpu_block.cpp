@@ -32,6 +32,7 @@ namespace memory::gpu_block
         allocation->size = size;
         allocation->offset = p->used + alignment_padding;
         allocation->alignment_padding = alignment_padding;
+        allocation->type = type;
 
         p->used += alignment_padding + size;
 

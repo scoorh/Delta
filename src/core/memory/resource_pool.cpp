@@ -187,7 +187,7 @@ static void invalidate_pool_id(c8 *id, const u32 container_size, const u32 id_st
 {
     const __m256i v = _mm256_set1_epi8((c8) 0xFF);
 
-    for (u32 i = 0; i + 32 <= container_size; i += 32)
+    for (u32 i = 0; i + 32 <= container_size * id_stride; i += 32)
     {
         _mm256_storeu_si256((__m256i *) (id + i), v);
     }

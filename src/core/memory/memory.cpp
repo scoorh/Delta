@@ -3,6 +3,7 @@
 
 static u32 get_device_host_local_memory_type(u32 bits);
 static u32 get_device_local_memory_type(u32 bits);
+static b8 find_free_allocation(u32 size, u32 alignment, u32 type, memory::allocation_t* out);
 
 
 namespace memory
@@ -21,29 +22,33 @@ namespace memory
         {
             logger::critical_error(logger::code::initialize_core_memory_block, settings::memory::core_block_size);
         }
-        if (!resource_pool::initialize(&buffers, sizeof(resource::buffer_t), settings::memory::buffer_resource_pool_size, allocate_from_core_block))
+        if (!resource_pool::initialize(&resource::buffers, sizeof(resource::buffer_t), settings::memory::buffer_resource_pool_size, allocate_from_core_block))
         {
             logger::critical_error(logger::code::initialize_buffer_resource_pool, settings::memory::buffer_resource_pool_size);
         }
-        if (!resource_pool::initialize(&images, sizeof(resource::image_t), settings::memory::image_resource_pool_size, allocate_from_core_block))
+        if (!resource_pool::initialize(&resource::images, sizeof(resource::image_t), settings::memory::image_resource_pool_size, allocate_from_core_block))
         {
             logger::critical_error(logger::code::initialize_image_resource_pool, settings::memory::image_resource_pool_size);
         }
-        if (!resource_pool::initialize(&image_samplers, sizeof(resource::image_sampler_t), settings::memory::image_sampler_resource_pool_size, allocate_from_core_block))
+        if (!resource_pool::initialize(&resource::image_samplers, sizeof(resource::image_sampler_t), settings::memory::image_sampler_resource_pool_size, allocate_from_core_block))
         {
             logger::critical_error(logger::code::initialize_image_sampler_resource_pool, settings::memory::image_sampler_resource_pool_size);
         }
-        if (!resource_pool::initialize(&shaders, sizeof(resource::shader_t), settings::memory::shader_resource_pool_size, allocate_from_core_block))
+        if (!resource_pool::initialize(&resource::shaders, sizeof(resource::shader_t), settings::memory::shader_resource_pool_size, allocate_from_core_block))
         {
             logger::critical_error(logger::code::initialize_shader_resource_pool, settings::memory::shader_resource_pool_size);
         }
-        if (!resource_pool::initialize(&pipelines, sizeof(resource::pipeline_t), settings::memory::pipeline_resource_pool_size, allocate_from_core_block))
+        if (!resource_pool::initialize(&resource::pipelines, sizeof(resource::pipeline_t), settings::memory::pipeline_resource_pool_size, allocate_from_core_block))
         {
             logger::critical_error(logger::code::initialize_pipeline_resource_pool, settings::memory::pipeline_resource_pool_size);
         }
         if (!array::initialize(&gpu_blocks, sizeof(gpu_block_t), settings::memory::gpu_block_array_size, allocate_from_core_block))
         {
             logger::critical_error(logger::code::initialize_gpu_block_array, settings::memory::gpu_block_array_size);
+        }
+        if (!array::initialize(&free_allocations, sizeof(allocation_t), settings::memory::free_allocation_array_size, allocate_from_core_block))
+        {
+            logger::critical_error(logger::code::initialize_free_allocation_array, settings::memory::free_allocation_array_size);
         }
     }
 
@@ -55,6 +60,12 @@ namespace memory
         {
             logger::error(logger::code::invalid_gpu_memory_type, requirements->memoryTypeBits);
             return false;
+        }
+
+
+        if (find_free_allocation((u32)requirements->size, (u32)requirements->alignment, type, allocation))
+        {
+            return true;
         }
 
 
@@ -90,9 +101,16 @@ namespace memory
     }
 
 
-    void free_to_gpu(allocation_t* allocation)
+    void free(const allocation_t* allocation)
     {
-        //TODO:  implement  free array
+        const auto dst = array::allocate<allocation_t>(&free_allocations);
+
+        if (!dst)
+        {
+            logger::error(logger::code::allocate_from_free_allocation_array, gpu_blocks.used);
+            return;
+        }
+        *dst = *allocation;
     }
 
 
@@ -214,7 +232,7 @@ namespace memory
 }
 
 
-static u32 get_device_host_local_memory_type(u32 bits)
+static u32 get_device_host_local_memory_type(const u32 bits)
 {
     for (u32 i = 0; i < 32; ++i)
     {
@@ -234,7 +252,7 @@ static u32 get_device_host_local_memory_type(u32 bits)
 }
 
 
-static u32 get_device_local_memory_type(u32 bits)
+static u32 get_device_local_memory_type(const u32 bits)
 {
     for (u32 i = 0; i < 32; ++i)
     {
@@ -250,4 +268,27 @@ static u32 get_device_local_memory_type(u32 bits)
         return i;
     }
     return memory::invalid_gpu_memory_type;
+}
+
+
+static b8 find_free_allocation(const u32 size, const u32 alignment, const u32 type, memory::allocation_t* out)
+{
+    for (u32 i = 0; i < memory::free_allocations.used; ++i)
+    {
+        auto allocation = memory::array::find<memory::allocation_t>(&memory::free_allocations, i);
+
+        const u32 size_leeway = size + (size >> 2);
+
+        if (allocation->type == type &&
+            allocation->offset % alignment == 0 &&
+            allocation->size >= size &&
+            allocation->size < size_leeway)
+        {
+            *out = *allocation;
+            memory::array::free(&memory::free_allocations, i);
+            return true;
+        }
+    }
+
+    return false;
 }

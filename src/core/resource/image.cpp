@@ -15,7 +15,7 @@ namespace resource::image
             return image;
 
 
-        image = memory::resource_pool::allocate<image_t>(&memory::images, setup->id);
+        image = memory::resource_pool::allocate<image_t>(&images, setup->id);
         if (!image)
         {
             logger::error(logger::code::allocate_from_image_resource_pool, setup->id);
@@ -27,7 +27,7 @@ namespace resource::image
         image->allocation.gpu_block = nullptr;
         image->view = nullptr;
         image->usage = setup->usage;
-        image->descriptor_index = (u16) memory::resource_pool::get_index(&memory::images, image);
+        image->descriptor_index = (u16) memory::resource_pool::get_index(&images, image);
 
 
         if (!create_handle(image, setup) ||
@@ -55,15 +55,15 @@ namespace resource::image
         }
         if (image->allocation.gpu_block)
         {
-            memory::free_to_gpu(&image->allocation);
+            memory::free(&image->allocation);
         }
-        memory::resource_pool::free(&memory::images, image);
+        memory::resource_pool::free(&images, image);
     }
 
 
     image_t *find(const u16 id)
     {
-        return memory::resource_pool::find<image_t>(&memory::images, id);
+        return memory::resource_pool::find<image_t>(&images, id);
     }
 }
 

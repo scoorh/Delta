@@ -19,6 +19,8 @@ namespace renderer
         initialize_device();
         initialize_swapchain();
         initialize_frames();
+        resource::descriptor_set_layout::initialize();
+        resource::pipeline_layout::initialize();
     }
 
 

@@ -13,7 +13,7 @@ namespace resource::image_sampler
             return image_sampler;
 
 
-        image_sampler = memory::resource_pool::allocate<image_sampler_t>(&memory::image_samplers, setup->id);
+        image_sampler = memory::resource_pool::allocate<image_sampler_t>(&image_samplers, setup->id);
         if (!image_sampler)
         {
             logger::error(logger::code::allocate_from_image_sampler_resource_pool, setup->id);
@@ -22,7 +22,7 @@ namespace resource::image_sampler
 
 
         image_sampler->handle = nullptr;
-        image_sampler->descriptor_index = (u16) memory::resource_pool::get_index(&memory::image_samplers, image_sampler);
+        image_sampler->descriptor_index = (u16) memory::resource_pool::get_index(&image_samplers, image_sampler);
 
 
         if (!create_handle(image_sampler, setup))
@@ -42,13 +42,13 @@ namespace resource::image_sampler
         {
             vulkan::vkDestroySampler(renderer::device, image_sampler->handle, nullptr);
         }
-        memory::resource_pool::free(&memory::image_samplers, image_sampler);
+        memory::resource_pool::free(&image_samplers, image_sampler);
     }
 
 
     image_sampler_t *find(const u16 id)
     {
-        return memory::resource_pool::allocate<image_sampler_t>(&memory::image_samplers, id);
+        return memory::resource_pool::find<image_sampler_t>(&image_samplers, id);
     }
 }
 
