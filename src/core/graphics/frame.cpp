@@ -5,6 +5,8 @@ static void create_semaphores(u32 frame_idx);
 static void create_fences(u32 frame_idx);
 static void create_command_pools(u32 frame_idx);
 static void create_command_buffers(u32 frame_idx);
+static void create_descriptor_pool(u32 frame_idx);
+static void create_descriptor_sets(u32 frame_idx);
 
 
 namespace renderer
@@ -17,6 +19,8 @@ namespace renderer
             create_fences(f);
             create_command_pools(f);
             create_command_buffers(f);
+            create_descriptor_pool(f);
+            create_descriptor_sets(f);
         }
     }
 }
@@ -122,4 +126,100 @@ static void create_command_buffers(const u32 frame_idx)
             logger::critical_error(logger::code::vkAllocateCommandBuffers_frame, result);
         }
     }
+}
+
+
+static void create_descriptor_pool(const u32 frame_idx)
+{
+    constexpr u32 max_sets = 5;
+    constexpr u32 sizes_count = 4;
+    VkDescriptorPoolSize sizes[sizes_count];
+    sizes[0].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    sizes[0].descriptorCount = resource::descriptor_set_layout::frame_data::sampled_image_count +
+                               resource::descriptor_set_layout::image_data::sampled_image_count +
+                               resource::descriptor_set_layout::mesh_cull_data::sampled_image_count +
+                               resource::descriptor_set_layout::mesh_data::sampled_image_count +
+                               resource::descriptor_set_layout::ui_data::sampled_image_count;
+    sizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    sizes[1].descriptorCount = resource::descriptor_set_layout::frame_data::storage_buffer_count +
+                               resource::descriptor_set_layout::image_data::storage_buffer_count +
+                               resource::descriptor_set_layout::mesh_cull_data::storage_buffer_count +
+                               resource::descriptor_set_layout::mesh_data::storage_buffer_count +
+                               resource::descriptor_set_layout::ui_data::storage_buffer_count;
+    sizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    sizes[2].descriptorCount = resource::descriptor_set_layout::frame_data::uniform_buffer_count +
+                               resource::descriptor_set_layout::image_data::uniform_buffer_count +
+                               resource::descriptor_set_layout::mesh_cull_data::uniform_buffer_count +
+                               resource::descriptor_set_layout::mesh_data::uniform_buffer_count +
+                               resource::descriptor_set_layout::ui_data::uniform_buffer_count;
+    sizes[3].type = VK_DESCRIPTOR_TYPE_SAMPLER;
+    sizes[3].descriptorCount = resource::descriptor_set_layout::frame_data::sampler_count +
+                               resource::descriptor_set_layout::image_data::sampler_count +
+                               resource::descriptor_set_layout::mesh_cull_data::sampler_count +
+                               resource::descriptor_set_layout::mesh_data::sampler_count +
+                               resource::descriptor_set_layout::ui_data::sampler_count;
+
+    VkDescriptorPoolCreateInfo descriptor_pool_create_info = {};
+    descriptor_pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    descriptor_pool_create_info.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+    descriptor_pool_create_info.maxSets = max_sets;
+    descriptor_pool_create_info.poolSizeCount = sizes_count;
+    descriptor_pool_create_info.pPoolSizes = sizes;
+
+    const auto result = vulkan::vkCreateDescriptorPool(renderer::device, &descriptor_pool_create_info, nullptr, &renderer::frames[frame_idx].descriptor_pool);
+    if (result)
+    {
+        logger::critical_error(logger::code::vkCreateDescriptorPool_frame, result);
+    }
+}
+
+
+static void create_descriptor_sets(const u32 frame_idx)
+{
+    VkDescriptorSetAllocateInfo allocate_info = {};
+    allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocate_info.descriptorPool = renderer::frames[frame_idx].descriptor_pool;
+    allocate_info.descriptorSetCount = 1;
+
+    constexpr u32 set_count = 5;
+    struct
+    {
+        VkDescriptorSetLayout layout;
+        VkDescriptorSet *dst;
+    } data[set_count];
+
+    data[0].layout = resource::descriptor_set_layouts.frame_data;
+    data[0].dst = &renderer::frames[frame_idx].descriptor_set.frame_data;
+    data[1].layout = resource::descriptor_set_layouts.mesh_data;
+    data[1].dst = &renderer::frames[frame_idx].descriptor_set.mesh_data;
+    data[3].layout = resource::descriptor_set_layouts.image_data;
+    data[3].dst = &renderer::frames[frame_idx].descriptor_set.image_data;
+
+    data[2].layout = resource::descriptor_set_layouts.mesh_cull_data;
+    data[2].dst = &renderer::frames[frame_idx].descriptor_set.mesh_cull_data;
+
+    data[4].layout = resource::descriptor_set_layouts.ui_data;
+    data[4].dst = &renderer::frames[frame_idx].descriptor_set.ui_data;
+
+    for (u32 i = 0; i < set_count; ++i)
+    {
+        allocate_info.pSetLayouts = &data[i].layout;
+
+        const auto result = vulkan::vkAllocateDescriptorSets(renderer::device, &allocate_info, data[i].dst);
+        if (result)
+        {
+            logger::critical_error(logger::code::vkAllocateDescriptorSets_frame, result);
+        }
+    }
+
+    renderer::frames[frame_idx].descriptor_set.draw_mesh_array[resource::pipeline_layout::draw_mesh::frame_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.frame_data;
+    renderer::frames[frame_idx].descriptor_set.draw_mesh_array[resource::pipeline_layout::draw_mesh::mesh_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.mesh_data;
+    renderer::frames[frame_idx].descriptor_set.draw_mesh_array[resource::pipeline_layout::draw_mesh::image_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.image_data;
+
+    renderer::frames[frame_idx].descriptor_set.draw_ui_array[resource::pipeline_layout::draw_ui::frame_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.frame_data;
+    renderer::frames[frame_idx].descriptor_set.draw_ui_array[resource::pipeline_layout::draw_ui::ui_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.ui_data;
+    renderer::frames[frame_idx].descriptor_set.draw_ui_array[resource::pipeline_layout::draw_ui::image_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.image_data;
+
+    renderer::frames[frame_idx].descriptor_set.cull_mesh_array[resource::pipeline_layout::cull_mesh::frame_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.frame_data;
+    renderer::frames[frame_idx].descriptor_set.cull_mesh_array[resource::pipeline_layout::cull_mesh::mesh_cull_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.mesh_cull_data;
 }

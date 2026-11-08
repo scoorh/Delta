@@ -13,6 +13,7 @@ namespace settings
         memory::image_sampler_resource_pool_size = 128;
         memory::shader_resource_pool_size = 128;
         memory::pipeline_resource_pool_size = 128;
+        memory::material_resource_pool_size = 128;
         memory::gpu_block_array_size = 128;
         memory::free_allocation_array_size = 128;
 

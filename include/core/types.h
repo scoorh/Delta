@@ -69,6 +69,7 @@ static_assert(sizeof(b8) == 1);
 #endif
 #include <vulkan/vulkan.h>
 #include <windows.h>
+#include <core/math.h>
 #include <core/memory.h>
 #include <core/dll.h>
 #include <core/log.h>

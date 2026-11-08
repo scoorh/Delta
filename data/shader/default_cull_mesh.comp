@@ -1,0 +1,36 @@
+#version 450
+
+#define frame_data_descriptor
+#define cull_mesh_data_descriptor
+#include "default_types.glsl"
+
+frame_data_uniform(0, 0, readonly)
+mesh_indirect_draw_instance_data_ssbo(1, 0, writeonly)
+mesh_indirect_draw_cmd_data_ssbo(1, 1, readonly)
+mesh_indirect_draw_cmd_ssbo(1, 2, )
+mesh_data_instance_ssbo(1, 3, readonly)
+
+layout(push_constant) uniform PushConstant
+{
+    uint instance_count;
+    uint indirect_draw_cmd_count;
+};
+
+layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
+void main() {
+   uint gid = gl_GlobalInvocationID.x;
+   if (gid >= indirect_draw_cmd_count)
+       return;
+
+   uint initial_instance_count = draw_initial_instance_count(gid);
+   uint first_instance_index = draw_first_instance(gid);
+   uint final_instance_count = 0;
+
+   for (uint i = 0; i < initial_instance_count; ++i) {
+       draw_instance_index(first_instance_index + final_instance_count) = i;
+       ++final_instance_count;
+   }
+
+   draw_instance_count(gid) = final_instance_count;
+}

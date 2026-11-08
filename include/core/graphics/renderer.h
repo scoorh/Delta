@@ -40,6 +40,19 @@ namespace renderer
 
     struct frame_t
     {
+        VkDescriptorPool descriptor_pool;
+        struct
+        {
+            VkDescriptorSet frame_data;
+            VkDescriptorSet mesh_data;
+            VkDescriptorSet image_data;
+            VkDescriptorSet ui_data;
+            VkDescriptorSet mesh_cull_data;
+            VkDescriptorSet draw_mesh_array[resource::pipeline_layout::draw_mesh::descriptor_count];
+            VkDescriptorSet cull_mesh_array[resource::pipeline_layout::cull_mesh::descriptor_count];
+            VkDescriptorSet draw_ui_array[resource::pipeline_layout::draw_ui::descriptor_count];
+        } descriptor_set;
+
         VkFence work_completed;
         u32 acquired_swapchain_image_idx;
         VkSemaphore acquired_swapchain_image;

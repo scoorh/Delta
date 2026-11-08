@@ -162,6 +162,38 @@ namespace resource
         VkPipeline handle;
         VkPipelineLayout layout;
     };
+
+
+    // ==================================================
+    // material
+    // ==================================================
+    namespace material
+    {
+        struct setup_t
+        {
+            u16 id;
+            u16 _pad0;
+            u32 color;
+        };
+        static_assert(offsetof(setup_t, id) == 0);
+        static_assert(sizeof(setup_t) % 4 == 0);
+    }
+
+    struct material_t
+    {
+        u32 color;
+    };
+}
+
+
+// ==================================================
+// material functions
+// ==================================================
+namespace resource::material
+{
+    material_t* create(const setup_t* setup);
+    void destroy(material_t* material);
+    material_t* find(u16 id);
 }
 
 
@@ -231,6 +263,7 @@ namespace resource
     inline memory::resource_pool_id16_t image_samplers = {};
     inline memory::resource_pool_id16_t shaders = {};
     inline memory::resource_pool_id16_t pipelines = {};
+    inline memory::resource_pool_id16_t materials = {};
     inline descriptor_set_layout_t descriptor_set_layouts = {};
     inline pipeline_layout_t pipeline_layouts = {};
 }

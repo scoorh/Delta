@@ -42,6 +42,10 @@ namespace memory
         {
             logger::critical_error(logger::code::initialize_pipeline_resource_pool, settings::memory::pipeline_resource_pool_size);
         }
+        if (!resource_pool::initialize(&resource::materials, sizeof(resource::material_t), settings::memory::material_resource_pool_size, allocate_from_core_block))
+        {
+            logger::critical_error(logger::code::initialize_material_resource_pool, settings::memory::material_resource_pool_size);
+        }
         if (!array::initialize(&gpu_blocks, sizeof(gpu_block_t), settings::memory::gpu_block_array_size, allocate_from_core_block))
         {
             logger::critical_error(logger::code::initialize_gpu_block_array, settings::memory::gpu_block_array_size);

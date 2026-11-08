@@ -22,6 +22,11 @@ namespace resource
             constexpr u32 idx = 0;
 
             constexpr u32 uniform_binding_idx = 0;
+
+            constexpr u32 uniform_buffer_count = 1;
+            constexpr u32 sampler_count = 0;
+            constexpr u32 sampled_image_count = 0;
+            constexpr u32 storage_buffer_count = 0;
         }
 
 
@@ -36,6 +41,11 @@ namespace resource
             constexpr u32 indirect_draw_cmd_data_binding_idx = 1;
             constexpr u32 indirect_draw_cmd_binding_idx = 2;
             constexpr u32 instances_binding_idx = 3;
+
+            constexpr u32 uniform_buffer_count = 0;
+            constexpr u32 sampler_count = 0;
+            constexpr u32 sampled_image_count = 0;
+            constexpr u32 storage_buffer_count = 4;
         }
 
 
@@ -52,6 +62,11 @@ namespace resource
             constexpr u32 materials_binding_idx = 3;
 
             constexpr u32 vertex_ssbo_array_binding_size = 1024;
+
+            constexpr u32 uniform_buffer_count = 0;
+            constexpr u32 sampler_count = 0;
+            constexpr u32 sampled_image_count = 0;
+            constexpr u32 storage_buffer_count = 3 + vertex_ssbo_array_binding_size;
         }
 
 
@@ -67,6 +82,11 @@ namespace resource
 
             constexpr u32 sampled_images_binding_size = 1024;
             constexpr u32 samplers_binding_size = 128;
+
+            constexpr u32 uniform_buffer_count = 0;
+            constexpr u32 sampler_count = samplers_binding_size;
+            constexpr u32 sampled_image_count = sampled_images_binding_size;
+            constexpr u32 storage_buffer_count = 0;
         }
 
 
@@ -76,6 +96,11 @@ namespace resource
         namespace ui_data
         {
             constexpr u32 instances_binding_idx = 0;
+
+            constexpr u32 uniform_buffer_count = 0;
+            constexpr u32 sampler_count = 0;
+            constexpr u32 sampled_image_count = 0;
+            constexpr u32 storage_buffer_count = 1;
         }
     }
 

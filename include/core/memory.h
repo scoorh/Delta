@@ -19,6 +19,9 @@ namespace memory
     typedef void * (*PFN_allocate_function)(u32 size);
 
 
+    // ==================================================
+    // linear block
+    // ==================================================
     struct linear_block_t
     {
         u32 used;
@@ -27,6 +30,9 @@ namespace memory
     };
 
 
+    // ==================================================
+    // gpu block
+    // ==================================================
     struct gpu_block_t
     {
         u32 used;
@@ -36,6 +42,9 @@ namespace memory
     };
 
 
+    // ==================================================
+    // resource pool
+    // ==================================================
     struct resource_pool_t
     {
         u32 size;
@@ -46,7 +55,16 @@ namespace memory
         c8 *data;
     };
 
+    struct resource_pool_id16_t
+    {
+        resource_pool_t _;
+        u16 *id;
+    };
 
+
+    // ==================================================
+    // array
+    // ==================================================
     struct array_t
     {
         u32 size;
@@ -56,13 +74,9 @@ namespace memory
     };
 
 
-    struct resource_pool_id16_t
-    {
-        resource_pool_t _;
-        u16 *id;
-    };
-
-
+    // ==================================================
+    // allocation
+    // ==================================================
     struct allocation_t
     {
         union

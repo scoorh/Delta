@@ -19,6 +19,7 @@ namespace settings
         inline u32 image_sampler_resource_pool_size = 0;
         inline u32 shader_resource_pool_size = 0;
         inline u32 pipeline_resource_pool_size = 0;
+        inline u32 material_resource_pool_size = 0;
         inline u32 gpu_block_array_size = 0;
         inline u32 free_allocation_array_size = 0;
     }

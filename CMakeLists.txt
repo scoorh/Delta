@@ -52,7 +52,9 @@ add_executable(Delta ${SOURCES}
         src/core/resource/descriptor_set_layout.cpp
         include/core/resource/shader.h
         include/core/file.h
-        src/core/file.cpp
+        src/core/file/base.cpp
+        include/core/math.h
+        src/core/resource/material.cpp
 )
 
 
@@ -146,14 +148,4 @@ target_compile_definitions(Delta PRIVATE
 set_target_properties(Delta PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin/Debug"
         RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/Release"
-)
-
-
-# ==================================================
-# ASSETS
-# ==================================================
-add_custom_command(TARGET Delta POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
-        "$<TARGET_FILE_DIR:Delta>/assets"
 )

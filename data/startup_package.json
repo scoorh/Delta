@@ -1,0 +1,109 @@
+{
+  "buffer": [
+    {
+      "id": "resource_metadata::character_index_buffer_id",
+      "size": 16777216,
+      "vram_memory": 1,
+      "usage": "resource_metadata::usage_index_buffer"
+    },
+    {
+      "id": "resource_metadata::character_position_vertex_buffer_id",
+      "size": 16777216,
+      "vram_memory": 1,
+      "usage": "resource_metadata::usage_vertex_storage_buffer"
+    },
+    {
+      "id": "resource_metadata::character_attribute_vertex_buffer_id",
+      "size": 16777216,
+      "vram_memory": 1,
+      "usage": "resource_metadata::usage_vertex_storage_buffer"
+    }
+  ],
+
+  "mesh": [
+    {
+      "id": "resource_metadata::default_character_body_mesh_id",
+      "src_file": "/mesh/SM_anime_female_age_16.mesh",
+      "index_buffer_id": "resource_metadata::character_index_buffer_id",
+      "position_vertex_buffer_id": "resource_metadata::character_position_vertex_buffer_id",
+      "attribute_vertex_buffer_id": "resource_metadata::character_attribute_vertex_buffer_id"
+    }
+  ],
+
+  "image": [
+  ],
+
+  "image_sampler": [
+  ],
+
+  "material": [
+    {
+      "id": "resource_metadata::default_character_body_material_id",
+      "color": {
+        "r": 255,
+        "g": 255,
+        "b": 0
+      }
+    }
+  ],
+
+  "shader": [
+    {
+      "id": "resource_metadata::default_cull_mesh_cs_id",
+      "src_file": "/shader/default_cull_mesh.comp.spv"
+    },
+    {
+      "id": "resource_metadata::default_draw_mesh_fs_id",
+      "src_file": "/shader/default_draw_mesh.frag.spv"
+    },
+    {
+      "id": "resource_metadata::default_draw_mesh_vs_id",
+      "src_file": "/shader/default_draw_mesh.vert.spv"
+    },
+    {
+      "id": "resource_metadata::default_draw_ui_fs_id",
+      "src_file": "/shader/default_draw_ui.frag.spv"
+    },
+    {
+      "id": "resource_metadata::default_draw_ui_vs_id",
+      "src_file": "/shader/default_draw_ui.vert.spv"
+    }
+  ],
+
+  "pipeline": [
+    {
+      "id": "resource_metadata::default_cull_mesh_pipeline_id",
+      "is_compute": 1,
+      "compute_shader_id": "resource_metadata::default_cull_mesh_cs_id",
+      "layout_idx": "resource_metadata::pipeline_layout_cull_mesh"
+    },
+    {
+      "id": "resource_metadata::default_draw_mesh_pipeline_id",
+      "is_compute": 0,
+      "vertex_shader_id": "resource_metadata::default_draw_mesh_vs_id",
+      "fragment_shader_id": "resource_metadata::default_draw_mesh_fs_id",
+      "layout_idx": "resource_metadata::pipeline_layout_draw_mesh",
+      "primitive_restart_enabled": 0,
+      "primitive_topology": "resource_metadata::primitive_topology_triangle_list",
+      "polygon_mode": "resource_metadata::polygon_mode_fill",
+      "cull_mode": "resource_metadata::cull_mode_back_face",
+      "front_face": "resource_metadata::front_face_clockwise",
+      "depth_test_enabled": 1,
+      "depth_write_enabled": 1
+    },
+    {
+      "id": "resource_metadata::default_draw_ui_pipeline_id",
+      "is_compute": 0,
+      "vertex_shader_id": "resource_metadata::default_draw_ui_vs_id",
+      "fragment_shader_id": "resource_metadata::default_draw_ui_fs_id",
+      "layout_idx": "resource_metadata::pipeline_layout_draw_ui",
+      "primitive_restart_enabled": 0,
+      "primitive_topology": "resource_metadata::primitive_topology_triangle_list",
+      "polygon_mode": "resource_metadata::polygon_mode_fill",
+      "cull_mode": "resource_metadata::cull_mode_back_face",
+      "front_face": "resource_metadata::front_face_clockwise",
+      "depth_test_enabled": 1,
+      "depth_write_enabled": 1
+    }
+  ]
+}
