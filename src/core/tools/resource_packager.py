@@ -7,6 +7,7 @@ import os
 import struct
 
 
+
 namespace_re = re.compile(
     r'namespace\s+(\w+(?:::\w+)*)\s*\{(.*?)\}',
     re.DOTALL
@@ -40,7 +41,12 @@ json_input_file_path = sys.argv[1]
 package_output_file_path = sys.argv[2]
 data_src_file_path = sys.argv[3]
 cpp_file_path = sys.argv[4]
-mapping = parse_header(cpp_file_path + "/src/engine/file/types.h", cpp_file_path + "/src/game/types.h")
+mapping = parse_header(cpp_file_path + "/core/metadata.h", cpp_file_path + "/game/metadata.h")
+
+
+input_filename = os.path.basename(json_input_file_path)
+package_output_file_path = package_output_file_path + "/" + input_filename.replace("_package", "").replace(".json", "") + ".package"
+
 
 def get_value(element, name, default, throw_on_missing):
     if name not in element:
@@ -93,14 +99,14 @@ def process_package_header(data, output_file):
 
 
 
-    buffer_setup_size = buffer_count * int(mapping["resource_metadata::buffer_setup_size"])
-    mesh_setup_size = mesh_count * int(mapping["resource_metadata::mesh_setup_size"])
-    image_setup_size = image_count * int(mapping["resource_metadata::image_setup_size"])
-    image_sampler_setup_size = image_sampler_count * int(mapping["resource_metadata::image_sampler_setup_size"])
-    material_setup_size = material_count * int(mapping["resource_metadata::material_setup_size"])
-    shader_setup_size = shader_count * int(mapping["resource_metadata::shader_setup_size"])
-    pipeline_setup_size = pipeline_count * int(mapping["resource_metadata::pipeline_setup_size"])
-    header_size = int(mapping["resource_metadata::package_header_size"])
+    buffer_setup_size = buffer_count * int(mapping["metadata::resource_package::buffer_setup_size"])
+    mesh_setup_size = mesh_count * int(mapping["metadata::resource_package::mesh_setup_size"])
+    image_setup_size = image_count * int(mapping["metadata::resource_package::image_setup_size"])
+    image_sampler_setup_size = image_sampler_count * int(mapping["metadata::resource_package::image_sampler_setup_size"])
+    material_setup_size = material_count * int(mapping["metadata::resource_package::material_setup_size"])
+    shader_setup_size = shader_count * int(mapping["metadata::resource_package::shader_setup_size"])
+    pipeline_setup_size = pipeline_count * int(mapping["metadata::resource_package::pipeline_setup_size"])
+    header_size = int(mapping["metadata::resource_package::package_header_size"])
 
     total_file_size = (buffer_setup_size +
                        mesh_setup_size +
@@ -316,6 +322,7 @@ def process_shader_data(array, output_file):
 
 
 def process(data):
+
     with open(package_output_file_path, "wb") as output_file:
         process_package_header(data, output_file)
 

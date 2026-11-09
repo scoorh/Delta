@@ -61,6 +61,7 @@ add_executable(Delta ${SOURCES}
         src/core/file/resource_package.cpp
         include/core/metadata.h
         src/core/resource/mesh.cpp
+        include/game/metadata.h
 )
 
 
@@ -166,8 +167,10 @@ set_target_properties(Delta PROPERTIES
 # ==================================================
 # DEPENDENCIES
 # ==================================================
+set(COMPILED_RESOURCES_DIR "${CMAKE_BINARY_DIR}/compiled_data")
 set(MESH_OUT_DIR "${CMAKE_BINARY_DIR}/compiled_data/mesh")
 set(SHADER_OUT_DIR "${CMAKE_BINARY_DIR}/compiled_data/shader")
+set(RESOURCE_PACKAGE_OUT_DIR "${CMAKE_BINARY_DIR}/compiled_data/shader")
 
 add_custom_target(copy_meshes
         COMMAND ${CMAKE_COMMAND}
@@ -187,5 +190,21 @@ add_custom_target(compile_shaders
         VERBATIM
 )
 
+add_custom_target(package_resources
+        COMMAND ${CMAKE_COMMAND}
+        "-DPYTHON_EXECUTABLE=${Python3_EXECUTABLE}"
+        "-DSOURCE_DIR=${CMAKE_SOURCE_DIR}/data"
+        "-DDEST_DIR=$<TARGET_FILE_DIR:Delta>/data"
+        "-DPYTHON_SCRIPT=${CMAKE_SOURCE_DIR}/src/core/tools/resource_packager.py"
+        "-DCOMPILED_RESOURCES_DIR=${COMPILED_RESOURCES_DIR}"
+        "-DMETADATA_CODE_DIR=${CMAKE_SOURCE_DIR}/include"
+        -P "${CMAKE_SOURCE_DIR}/src/core/tools/package_resources.cmake"
+        COMMENT "Packaging resources"
+        VERBATIM
+)
+
 add_dependencies(Delta copy_meshes)
 add_dependencies(Delta compile_shaders)
+add_dependencies(package_resources compile_shaders)
+add_dependencies(package_resources copy_meshes)
+add_dependencies(Delta package_resources)
