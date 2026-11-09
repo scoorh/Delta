@@ -280,6 +280,8 @@ namespace resource::buffer
 
     b8 reserve_space(buffer_t* buffer, u32 size, u32* offset);
     void reset_to_offset(buffer_t* buffer, u32 offset);
+
+    void update_frame_descriptors(const buffer_t* buffer);
 }
 
 

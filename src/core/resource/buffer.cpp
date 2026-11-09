@@ -36,6 +36,7 @@ namespace resource::buffer
             return nullptr;
         }
 
+        update_frame_descriptors(buffer);
 
         return buffer;
     }
@@ -75,6 +76,32 @@ namespace resource::buffer
     void reset_to_offset(buffer_t* buffer, const u32 offset)
     {
         buffer->used = offset;
+    }
+
+
+    void update_frame_descriptors(const buffer_t* buffer)
+    {
+        if (buffer->usage != metadata::resource_package::usage_vertex_storage_buffer)
+            return;
+
+        constexpr u32 write_info_count = renderer::frames_in_flight;
+        VkDescriptorBufferInfo buffer_info[write_info_count] = {};
+        VkWriteDescriptorSet write_info[write_info_count] = {};
+
+        for (u32 f = 0; f < write_info_count; ++f)
+        {
+            write_info[f].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write_info[f].dstSet = renderer::frames[f].descriptor_set.mesh_data;
+            write_info[f].dstBinding = descriptor_set_layout::mesh_data::vertex_ssbo_array_binding_idx;
+            write_info[f].dstArrayElement = buffer->descriptor_index;
+            write_info[f].descriptorCount = 1;
+            write_info[f].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            write_info[f].pBufferInfo = &buffer_info[f];
+            buffer_info[f].range = buffer->allocation.size;
+            buffer_info[f].buffer = buffer->handle;
+        }
+
+        vulkan::vkUpdateDescriptorSets(renderer::device, write_info_count, write_info, 0, nullptr);
     }
 }
 

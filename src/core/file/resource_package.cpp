@@ -120,8 +120,25 @@ namespace file::resource_package
         if (!f->header.buffer_count)
             return true;
 
+        b8 result = true;
 
-        return true;
+
+        const auto setup_array = memory::allocate_from_temporary_block_1<resource::buffer::setup_t>(f->header.buffer_count);
+
+        base::move_pointer(&f->base, f->header.buffer_setup_offset);
+        base::read_binary(&f->base, setup_array, sizeof(resource::buffer::setup_t) * f->header.buffer_count);
+
+        for (u32 i = 0; i < f->header.buffer_count; ++i)
+        {
+            const auto setup = &setup_array[i];
+
+            if (!resource::buffer::create(setup))
+                result = false;
+        }
+
+        memory::reset_temporary_block_1();
+
+        return result;
     }
 
 
@@ -130,8 +147,25 @@ namespace file::resource_package
         if (!f->header.mesh_count)
             return true;
 
+        b8 result = true;
 
-        return true;
+
+        const auto setup_array = memory::allocate_from_temporary_block_1<resource::mesh::setup_t>(f->header.mesh_count);
+
+        base::move_pointer(&f->base, f->header.mesh_setup_offset);
+        base::read_binary(&f->base, setup_array, sizeof(resource::mesh::setup_t) * f->header.mesh_count);
+
+        for (u32 i = 0; i < f->header.mesh_count; ++i)
+        {
+            const auto setup = &setup_array[i];
+
+            if (!resource::mesh::create(setup))
+                result = false;
+        }
+
+        memory::reset_temporary_block_1();
+
+        return result;
     }
 
 
@@ -140,8 +174,25 @@ namespace file::resource_package
         if (!f->header.image_count)
             return true;
 
+        b8 result = true;
 
-        return true;
+
+        const auto setup_array = memory::allocate_from_temporary_block_1<resource::image::setup_t>(f->header.image_count);
+
+        base::move_pointer(&f->base, f->header.image_setup_offset);
+        base::read_binary(&f->base, setup_array, sizeof(resource::image::setup_t) * f->header.image_count);
+
+        for (u32 i = 0; i < f->header.image_count; ++i)
+        {
+            const auto setup = &setup_array[i];
+
+            if (!resource::image::create(setup))
+                result = false;
+        }
+
+        memory::reset_temporary_block_1();
+
+        return result;
     }
 
 
@@ -150,8 +201,25 @@ namespace file::resource_package
         if (!f->header.image_sampler_count)
             return true;
 
+        b8 result = true;
 
-        return true;
+
+        const auto setup_array = memory::allocate_from_temporary_block_1<resource::image_sampler::setup_t>(f->header.image_sampler_count);
+
+        base::move_pointer(&f->base, f->header.image_sampler_setup_offset);
+        base::read_binary(&f->base, setup_array, sizeof(resource::image_sampler::setup_t) * f->header.image_sampler_count);
+
+        for (u32 i = 0; i < f->header.image_sampler_count; ++i)
+        {
+            const auto setup = &setup_array[i];
+
+            if (!resource::image_sampler::create(setup))
+                result = false;
+        }
+
+        memory::reset_temporary_block_1();
+
+        return result;
     }
 
 
@@ -160,7 +228,24 @@ namespace file::resource_package
         if (!f->header.material_count)
             return true;
 
+        b8 result = true;
 
-        return true;
+
+        const auto setup_array = memory::allocate_from_temporary_block_1<resource::material::setup_t>(f->header.material_count);
+
+        base::move_pointer(&f->base, f->header.material_setup_offset);
+        base::read_binary(&f->base, setup_array, sizeof(resource::material::setup_t) * f->header.material_count);
+
+        for (u32 i = 0; i < f->header.material_count; ++i)
+        {
+            const auto setup = &setup_array[i];
+
+            if (!resource::material::create(setup))
+                result = false;
+        }
+
+        memory::reset_temporary_block_1();
+
+        return result;
     }
 }
