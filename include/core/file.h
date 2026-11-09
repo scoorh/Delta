@@ -53,6 +53,15 @@ namespace file::resource_package
 {
     b8 open(resource_package_t* f, const c8* filename);
     void close(resource_package_t* f);
+
+    b8 load_everything(const c8* filename);
+    b8 load_all_shaders(const resource_package_t* f);
+    b8 load_all_pipelines(const resource_package_t* f);
+    b8 load_all_buffers(const resource_package_t* f);
+    b8 load_all_meshes(const resource_package_t* f);
+    b8 load_all_images(const resource_package_t* f);
+    b8 load_all_image_samplers(const resource_package_t* f);
+    b8 load_all_materials(const resource_package_t* f);
 }
 
 

@@ -148,6 +148,15 @@ namespace memory::resource_pool
                 return &p->_.data[(i + (__builtin_ctz(mask) >> 1)) * p->_.data_stride];
             }
         }
+
+        for (; i < p->_.max_used; ++i)
+        {
+            if (p->id[i] == id)
+            {
+                return p->_.data + (i * p->_.data_stride);
+            }
+        }
+
         return nullptr;
     }
 }

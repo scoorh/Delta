@@ -133,7 +133,7 @@ namespace resource
     {
         constexpr u32 compute_shader_module_idx = 0;
         constexpr u32 vertex_shader_module_idx = 0;
-        constexpr u32 fragment_shader_module_idx = 0;
+        constexpr u32 fragment_shader_module_idx = 1;
 
         struct setup_t
         {

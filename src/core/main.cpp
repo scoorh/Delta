@@ -8,6 +8,8 @@ int main()
     dll::initialize();
     renderer::initialize();
 
+    file::resource_package::load_everything("data/startup.package");
+
     window::show();
 
     while (true)
