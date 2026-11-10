@@ -1,5 +1,7 @@
 #include <core/types.h>
 
+#include "game/metadata.h"
+
 
 static void wait_for_fence(renderer::frame_t* frame);
 static void reset_fence(renderer::frame_t* frame);
@@ -85,6 +87,82 @@ static void transfer_frame_uniform(renderer::frame_t* frame)
     transfer_cmd.buffer.src_size = sizeof(resource::shader::frame_uniform_t);
     transfer_cmd.memory_barrier.stage_mask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
     transfer_cmd.memory_barrier.access_mask = VK_ACCESS_2_UNIFORM_READ_BIT;
+    resource::gpu_transfer_work::send_buffer_cmd(gpu_transfer_work, &transfer_cmd);
+
+
+
+
+
+    const auto mesh_instance = resource::gpu_transfer_work::memory_pointer<resource::shader::mesh_instance_t>(gpu_transfer_work);
+    const auto mesh_instance_src_offset = resource::gpu_transfer_work::memory_offset(gpu_transfer_work);
+    const u32 mesh_instance_count = 1;
+
+    math::matrix4x4_t m;
+    math::quaternion_t q = {1.0f, 0.0f, 0.0f, 0.0f};
+    math::matrix4x4::world_transform(&m, 0.0f, 0.0f, 0.0f, 0.5f, 0.5f, 0.5f, &q);
+
+    mesh_instance[0].packed0.x = m.columns[0].x;
+    mesh_instance[0].packed0.y = m.columns[1].x;
+    mesh_instance[0].packed0.z = m.columns[2].x;
+    mesh_instance[0].packed0.w = m.columns[3].x;
+    mesh_instance[0].packed1.x = m.columns[0].y;
+    mesh_instance[0].packed1.y = m.columns[1].y;
+    mesh_instance[0].packed1.z = m.columns[2].y;
+    mesh_instance[0].packed1.w = m.columns[3].y;
+    mesh_instance[0].packed2.x = m.columns[0].z;
+    mesh_instance[0].packed2.y = m.columns[1].z;
+    mesh_instance[0].packed2.z = m.columns[2].z;
+    mesh_instance[0].packed2.w = m.columns[3].z;
+
+    auto mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
+    mesh_instance[0].position_vertex_ssbo_idx = mesh->position_vertex_ssbo_idx;
+    mesh_instance[0].attribute_vertex_ssbo_idx = mesh->attribute_vertex_ssbo_idx;
+    mesh_instance[0].material_idx = 0;
+    mesh_instance[0].interaction_id = 0;
+
+
+    transfer_cmd.buffer.dst = frame->data_buffer;
+    transfer_cmd.buffer.dst_offset = frame->data_offset.mesh_instances;
+    transfer_cmd.buffer.src_offset = mesh_instance_src_offset;
+    transfer_cmd.buffer.src_size = sizeof(resource::shader::mesh_instance_t) * mesh_instance_count;
+    transfer_cmd.memory_barrier.stage_mask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+    transfer_cmd.memory_barrier.access_mask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+    resource::gpu_transfer_work::send_buffer_cmd(gpu_transfer_work, &transfer_cmd);
+
+
+    const auto mesh_indirect_draw_cmd = resource::gpu_transfer_work::memory_pointer<resource::shader::mesh_indirect_draw_cmd_t>(gpu_transfer_work);
+    const auto mesh_indirect_draw_cmd_src_offset = resource::gpu_transfer_work::memory_offset(gpu_transfer_work);
+    const u32 mesh_indirect_draw_cmd_count = 1;
+
+
+    mesh_indirect_draw_cmd[0].index_count = mesh->index_count;
+    mesh_indirect_draw_cmd[0].first_index = mesh->first_index;
+    mesh_indirect_draw_cmd[0].vertex_offset = mesh->first_vertex;
+    mesh_indirect_draw_cmd[0].first_instance = 0;
+
+
+    transfer_cmd.buffer.dst = frame->data_buffer;
+    transfer_cmd.buffer.dst_offset = frame->data_offset.mesh_indirect_draw_cmds;
+    transfer_cmd.buffer.src_offset = mesh_indirect_draw_cmd_src_offset;
+    transfer_cmd.buffer.src_size = sizeof(resource::shader::mesh_indirect_draw_cmd_t) * mesh_indirect_draw_cmd_count;
+    transfer_cmd.memory_barrier.stage_mask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    transfer_cmd.memory_barrier.access_mask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+    resource::gpu_transfer_work::send_buffer_cmd(gpu_transfer_work, &transfer_cmd);
+
+
+
+    const auto mesh_indirect_draw_cmd_data = resource::gpu_transfer_work::memory_pointer<resource::shader::mesh_indirect_draw_cmd_data_t>(gpu_transfer_work);
+    const auto mesh_indirect_draw_cmd_data_src_offset = resource::gpu_transfer_work::memory_offset(gpu_transfer_work);
+    const u32 mesh_indirect_draw_cmd_data_count = 1;
+
+    mesh_indirect_draw_cmd_data[0].initial_instance_count = 1;
+
+    transfer_cmd.buffer.dst = frame->data_buffer;
+    transfer_cmd.buffer.dst_offset = frame->data_offset.mesh_indirect_draw_cmds_data;
+    transfer_cmd.buffer.src_offset = mesh_indirect_draw_cmd_data_src_offset;
+    transfer_cmd.buffer.src_size = sizeof(resource::shader::mesh_indirect_draw_cmd_data_t) * mesh_indirect_draw_cmd_data_count;
+    transfer_cmd.memory_barrier.stage_mask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    transfer_cmd.memory_barrier.access_mask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
     resource::gpu_transfer_work::send_buffer_cmd(gpu_transfer_work, &transfer_cmd);
 }
 
@@ -317,6 +395,18 @@ static void begin_draw_to_swapchain_commands(renderer::frame_t* frame)
 
     vulkan::vkCmdSetViewport(cmd, 0, 1, &viewport);
     vulkan::vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+
+
+
+    auto pipeline = resource::pipeline::find(metadata::resource_package::default_draw_mesh_pipeline_id);
+    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
+    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, resource::pipeline_layout::draw_mesh::descriptor_count, frame->descriptor_set.draw_mesh_array, 0, nullptr);
+
+    auto mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
+    vulkan::vkCmdBindIndexBuffer(cmd, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT16);
+
+    vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 1, sizeof(resource::shader::mesh_indirect_draw_cmd_t));
 }
 
 

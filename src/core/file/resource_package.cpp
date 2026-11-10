@@ -1,6 +1,10 @@
 #include <core/types.h>
 
 
+static b8 send_mesh_to_gpu(resource::mesh_t *mesh, const resource::mesh::setup_t *setup, const file::base_t *file);
+static b8 send_materials_to_gpu(resource::material_t **materials, u32 material_count);
+
+
 namespace file::resource_package
 {
     b8 open(resource_package_t *f, const c8 *filename)
@@ -158,9 +162,19 @@ namespace file::resource_package
         for (u32 i = 0; i < f->header.mesh_count; ++i)
         {
             const auto setup = &setup_array[i];
+            const auto mesh = resource::mesh::create(setup);
 
-            if (!resource::mesh::create(setup))
+            if (!mesh)
+            {
                 result = false;
+                continue;
+            }
+
+            if (!send_mesh_to_gpu(mesh, setup, &f->base))
+            {
+                result = false;
+                resource::mesh::destroy(mesh);
+            }
         }
 
         memory::reset_temporary_block_1();
@@ -232,6 +246,8 @@ namespace file::resource_package
 
 
         const auto setup_array = memory::allocate_from_temporary_block_1<resource::material::setup_t>(f->header.material_count);
+        const auto created_materials = memory::allocate_from_temporary_block_1<resource::material_t *>(f->header.material_count);
+        u32 created_material_count = 0;
 
         base::move_pointer(&f->base, f->header.material_setup_offset);
         base::read_binary(&f->base, setup_array, sizeof(resource::material::setup_t) * f->header.material_count);
@@ -239,13 +255,140 @@ namespace file::resource_package
         for (u32 i = 0; i < f->header.material_count; ++i)
         {
             const auto setup = &setup_array[i];
+            const auto material = resource::material::create(setup);
 
-            if (!resource::material::create(setup))
+            if (!material)
+            {
                 result = false;
+                continue;
+            }
+
+            created_materials[created_material_count] = material;
+            ++created_material_count;
+        }
+
+        if (!send_materials_to_gpu(created_materials, created_material_count))
+        {
+            result = false;
+            for (u32 i = 0; i < created_material_count; ++i)
+            {
+                resource::material::destroy(created_materials[i]);
+            }
         }
 
         memory::reset_temporary_block_1();
 
         return result;
     }
+}
+
+
+static b8 send_mesh_to_gpu(resource::mesh_t *mesh, const resource::mesh::setup_t *setup, const file::base_t *file)
+{
+    b8 result = false;
+    resource::gpu_transfer_work_t::cmd_t cmd = {};
+
+
+    auto gpu_transfer_work = resource::gpu_transfer_work::book();
+    if (!gpu_transfer_work)
+    {
+        return false;
+    }
+    if (!resource::gpu_transfer_work::begin(gpu_transfer_work))
+    {
+        goto end;
+    }
+
+
+    file::base::move_pointer(file, setup->package_data_offset);
+
+    cmd.buffer.dst = mesh->position_vertex_buffer;
+    cmd.buffer.dst_offset = mesh->position_vertex_buffer_offset;
+    cmd.buffer.src_offset = 0;
+    cmd.buffer.src_size = setup->vertex_count * setup->position_vertex_size;
+    cmd.memory_barrier.access_mask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+    cmd.memory_barrier.stage_mask = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+    resource::gpu_transfer_work::send_buffer_cmd(gpu_transfer_work, &cmd);
+    file::base::read_binary(file, gpu_transfer_work->src_memory + cmd.buffer.src_offset, cmd.buffer.src_size);
+
+    cmd.buffer.dst = mesh->attribute_vertex_buffer;
+    cmd.buffer.dst_offset = mesh->attribute_vertex_buffer_offset;
+    cmd.buffer.src_offset += cmd.buffer.src_size;
+    cmd.buffer.src_size = setup->vertex_count * setup->attribute_vertex_size;
+    cmd.memory_barrier.access_mask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+    cmd.memory_barrier.stage_mask = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+    resource::gpu_transfer_work::send_buffer_cmd(gpu_transfer_work, &cmd);
+    file::base::read_binary(file, gpu_transfer_work->src_memory + cmd.buffer.src_offset, cmd.buffer.src_size);
+
+    cmd.buffer.dst = mesh->index_buffer;
+    cmd.buffer.dst_offset = mesh->index_buffer_offset;
+    cmd.buffer.src_offset += cmd.buffer.src_size;
+    cmd.buffer.src_size = setup->index_count * setup->index_size;
+    cmd.memory_barrier.access_mask = VK_ACCESS_2_INDEX_READ_BIT;
+    cmd.memory_barrier.stage_mask = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
+    resource::gpu_transfer_work::send_buffer_cmd(gpu_transfer_work, &cmd);
+    file::base::read_binary(file, gpu_transfer_work->src_memory + cmd.buffer.src_offset, cmd.buffer.src_size);
+
+
+    if (!resource::gpu_transfer_work::submit(gpu_transfer_work, nullptr))
+    {
+        goto end;
+    }
+
+    result = true;
+
+end:
+    resource::gpu_transfer_work::unbook(gpu_transfer_work);
+    return result;
+}
+
+
+static b8 send_materials_to_gpu(resource::material_t **materials, const u32 material_count)
+{
+    b8 result = false;
+    resource::gpu_transfer_work_t::cmd_t cmd = {};
+    resource::shader::material_t *src;
+
+
+    auto gpu_transfer_work = resource::gpu_transfer_work::book();
+    if (!gpu_transfer_work)
+    {
+        return false;
+    }
+    if (!resource::gpu_transfer_work::begin(gpu_transfer_work))
+    {
+        goto end;
+    }
+
+
+    cmd.memory_barrier.access_mask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+    cmd.memory_barrier.stage_mask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+    cmd.buffer.src_size = sizeof(resource::shader::material_t);
+
+    for (u32 f = 0; f < renderer::frames_in_flight; ++f)
+    {
+        cmd.buffer.dst = renderer::frames[f].data_buffer;
+
+        for (u32 m = 0; m < material_count; ++m)
+        {
+            src = resource::gpu_transfer_work::memory_pointer<resource::shader::material_t>(gpu_transfer_work);
+            src->color = materials[m]->color;
+
+            cmd.buffer.dst_offset = renderer::frames[f].data_offset.materials + materials[m]->descriptor_index * sizeof(resource::shader::material_t);
+            cmd.buffer.src_offset = m * sizeof(resource::shader::material_t);
+
+            resource::gpu_transfer_work::send_buffer_cmd(gpu_transfer_work, &cmd);
+        }
+    }
+
+
+    if (!resource::gpu_transfer_work::submit(gpu_transfer_work, nullptr))
+    {
+        goto end;
+    }
+
+    result = true;
+end:
+    resource::gpu_transfer_work::unbook(gpu_transfer_work);
+    return result;
 }

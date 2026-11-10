@@ -2,6 +2,7 @@
 
 
 static b8 create_handle(resource::image_sampler_t *image_sampler, const resource::image_sampler::setup_t *setup);
+static void update_frame_descriptors(const resource::image_sampler_t* image_sampler);
 
 
 namespace resource::image_sampler
@@ -31,6 +32,7 @@ namespace resource::image_sampler
             return nullptr;
         }
 
+        update_frame_descriptors(image_sampler);
 
         return image_sampler;
     }
@@ -73,4 +75,26 @@ static b8 create_handle(resource::image_sampler_t *image_sampler, const resource
         return false;
     }
     return true;
+}
+
+
+static void update_frame_descriptors(const resource::image_sampler_t* image_sampler)
+{
+    constexpr u32 write_info_count = renderer::frames_in_flight;
+    VkDescriptorImageInfo image_info[write_info_count] = {};
+    VkWriteDescriptorSet write_info[write_info_count] = {};
+
+    for (u32 f = 0; f < write_info_count; ++f)
+    {
+        write_info[f].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write_info[f].dstSet = renderer::frames[f].descriptor_set.image_data;
+        write_info[f].dstBinding = resource::descriptor_set_layout::image_data::samplers_binding_idx;
+        write_info[f].dstArrayElement = image_sampler->descriptor_index;
+        write_info[f].descriptorCount = 1;
+        write_info[f].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        write_info[f].pImageInfo = &image_info[f];
+        image_info[f].sampler = image_sampler->handle;
+    }
+
+    vulkan::vkUpdateDescriptorSets(renderer::device, write_info_count, write_info, 0, nullptr);
 }

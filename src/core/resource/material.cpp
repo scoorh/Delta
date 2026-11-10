@@ -22,6 +22,7 @@ namespace resource::material
 
 
         material->color = setup->color;
+        material->descriptor_index = (u16) memory::resource_pool::get_index(&materials, material);
 
 
         if (!::create(material, setup))

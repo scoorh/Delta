@@ -85,7 +85,7 @@ namespace logger
         vkAllocateCommandBuffers_gpu_transfer_work,
         create_gpu_transfer_work_staging_buffer,
         vkMapMemory_gpu_transfer_work_staging_buffer,
-        vkWaitForFences_gpu_transfer_work,
+        vkGetFenceStatus_gpu_transfer_work,
         vkBeginCommandBuffer_gpu_transfer_work,
         vkEndCommandBuffer_gpu_transfer_work,
         vkQueueSubmit2_gpu_transfer_work,

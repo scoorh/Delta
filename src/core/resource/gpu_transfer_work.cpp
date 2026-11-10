@@ -36,15 +36,15 @@ namespace resource::gpu_transfer_work
         {
             auto work = &gpu_transfer_works[next_work_idx];
 
+            next_work_idx = (next_work_idx + 1) % gpu_transfer_work_count;
+            if (next_work_idx < renderer::frames_in_flight)
+                next_work_idx = renderer::frames_in_flight;
+
             if (!work->booked && VK_SUCCESS == vulkan::vkGetFenceStatus(renderer::device, work->all_completed))
             {
                 work->booked = true;
                 return work;
             }
-
-            next_work_idx = (next_work_idx + 1) % gpu_transfer_work_count;
-            if (next_work_idx < renderer::frames_in_flight)
-                next_work_idx = renderer::frames_in_flight;
 
             if (start_idx == next_work_idx)
             {
@@ -70,13 +70,12 @@ namespace resource::gpu_transfer_work
 
     b8 begin(gpu_transfer_work_t *work)
     {
-        VkResult result = vulkan::vkWaitForFences(renderer::device, 1, &work->all_completed, VK_TRUE, 0);
+        VkResult result = vulkan::vkGetFenceStatus(renderer::device, work->all_completed);
         if (result)
         {
-            logger::error(logger::code::vkWaitForFences_gpu_transfer_work, result);
+            logger::error(logger::code::vkGetFenceStatus_gpu_transfer_work, result);
             return false;
         }
-        vulkan::vkResetFences(renderer::device, 1, &work->all_completed);
 
         work->used_memory = 0;
         vulkan::vkResetCommandPool(renderer::device, work->default_cmd_pool, 0);
@@ -132,6 +131,8 @@ namespace resource::gpu_transfer_work
         submit_info.pCommandBufferInfos = &cmd_buffer_submit_info;
         submit_info.signalSemaphoreInfoCount = 1;
         submit_info.pSignalSemaphoreInfos = &signal_semaphore_info;
+
+        vulkan::vkResetFences(renderer::device, 1, &work->all_completed);
 
         renderer::lock_queue_mutex();
         result = vulkan::vkQueueSubmit2(renderer::default_queue, 1, &submit_info, work->all_completed);
