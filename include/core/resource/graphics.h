@@ -433,6 +433,13 @@ namespace resource::gpu_transfer_work
     {
         return work->used_memory;
     }
+
+
+    template<typename T>
+    T* memory_pointer(const gpu_transfer_work_t *work)
+    {
+        return (T*)memory_pointer(work);
+    }
 }
 
 

@@ -1,0 +1,32 @@
+{
+  "buffer": [
+  ],
+
+  "mesh": [
+  ],
+
+  "image": [
+  ],
+
+  "image_sampler": [
+  ],
+
+  "material": [
+  ],
+
+  "shader": [
+    {
+      "id": "metadata::resource_package::cull_mesh_cs_id",
+      "src_file": "/shader/cull_mesh.comp.spv"
+    }
+  ],
+
+  "pipeline": [
+    {
+      "id": "metadata::resource_package::cull_mesh_pipeline_id",
+      "is_compute": 1,
+      "compute_shader_id": "metadata::resource_package::cull_mesh_cs_id",
+      "layout_idx": "metadata::resource_package::pipeline_layout_cull_mesh"
+    }
+  ]
+}

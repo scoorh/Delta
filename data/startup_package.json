@@ -49,10 +49,6 @@
 
   "shader": [
     {
-      "id": "metadata::resource_package::default_cull_mesh_cs_id",
-      "src_file": "/shader/default_cull_mesh.comp.spv"
-    },
-    {
       "id": "metadata::resource_package::default_draw_mesh_fs_id",
       "src_file": "/shader/default_draw_mesh.frag.spv"
     },
@@ -71,12 +67,6 @@
   ],
 
   "pipeline": [
-    {
-      "id": "metadata::resource_package::default_cull_mesh_pipeline_id",
-      "is_compute": 1,
-      "compute_shader_id": "metadata::resource_package::default_cull_mesh_cs_id",
-      "layout_idx": "metadata::resource_package::pipeline_layout_cull_mesh"
-    },
     {
       "id": "metadata::resource_package::default_draw_mesh_pipeline_id",
       "is_compute": 0,

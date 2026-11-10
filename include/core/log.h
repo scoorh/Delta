@@ -90,6 +90,7 @@ namespace logger
         vkEndCommandBuffer_gpu_transfer_work,
         vkQueueSubmit2_gpu_transfer_work,
 
+        missing_cull_mesh_pipeline,
         vkCreateSemaphore_frame,
         vkCreateFence_frame,
         vkCreateCommandPool_frame,
@@ -101,6 +102,9 @@ namespace logger
         vkWaitForFences_frame,
         vkResetFences_frame,
         vkAcquireNextImageKHR,
+        vkBeginCommandBuffer_compute,
+        vkEndCommandBuffer_compute,
+        vkQueueSubmit2_compute,
         vkBeginCommandBuffer_draw_to_swapchain,
         vkEndCommandBuffer_draw_to_swapchain,
         vkQueueSubmit2_draw_to_swapchain,

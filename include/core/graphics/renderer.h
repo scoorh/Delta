@@ -50,6 +50,8 @@ namespace renderer
             VkDescriptorSet draw_ui_array[resource::pipeline_layout::draw_ui::descriptor_count];
         } descriptor_set;
 
+        resource::gpu_transfer_work_t* gpu_transfer_work;
+
         VkBuffer data_buffer;
         struct
         {
@@ -67,11 +69,15 @@ namespace renderer
         VkSemaphore acquired_swapchain_image;
         VkSemaphore draw_to_swapchain_completed;
         VkSemaphore gpu_transfer_completed;
+        VkSemaphore compute_completed;
 
-        resource::gpu_transfer_work_t* gpu_transfer_work;
+        VkPipeline cull_mesh_pipeline;
+        VkPipelineLayout cull_mesh_pipeline_layout;
+        u32 compute_shader_wave_size;
 
         VkCommandPool default_command_pool;
         VkCommandBuffer draw_to_swapchain_cmd_buffer;
+        VkCommandBuffer compute_cmd_buffer;
     };
     inline frame_t frames[frames_in_flight] = {};
 

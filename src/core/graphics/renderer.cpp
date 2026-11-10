@@ -1,13 +1,16 @@
 #include <core/types.h>
 
 
-static void wait_for_fence(u32 frame_idx);
-static void reset_fence(u32 frame_idx);
-static void reset_commands(u32 frame_idx);
-static b8 acquire_swapchain_image(u32 frame_idx);
-static void present_swapchain_image(u32 frame_idx);
-static void begin_draw_to_swapchain_commands(u32 frame_idx);
-static void submit_draw_to_swapchain_commands(u32 frame_idx);
+static void wait_for_fence(renderer::frame_t* frame);
+static void reset_fence(renderer::frame_t* frame);
+static void reset_commands(renderer::frame_t* frame);
+static b8 acquire_swapchain_image(renderer::frame_t* frame);
+static void present_swapchain_image(renderer::frame_t* frame);
+static void begin_draw_to_swapchain_commands(renderer::frame_t* frame);
+static void submit_draw_to_swapchain_commands(renderer::frame_t* frame);
+static void transfer_frame_data(renderer::frame_t* frame);
+static void transfer_frame_uniform(renderer::frame_t* frame);
+static void submit_compute_commands(renderer::frame_t* frame);
 
 
 namespace renderer
@@ -22,6 +25,7 @@ namespace renderer
         resource::descriptor_set_layout::initialize();
         resource::pipeline_layout::initialize();
         resource::gpu_transfer_work::initialize();
+        file::resource_package::load_everything("data/core.package");
         initialize_frames();
     }
 
@@ -29,26 +33,174 @@ namespace renderer
     void draw_frame()
     {
         const u32 frame_idx = current_frame % frames_in_flight;
+        const auto frame = &frames[frame_idx];
+
         ++current_frame;
 
-        wait_for_fence(frame_idx);
+        wait_for_fence(frame);
 
-        if (!acquire_swapchain_image(frame_idx))
+        if (!acquire_swapchain_image(frame))
             return;
 
-        reset_fence(frame_idx);
-        reset_commands(frame_idx);
+        reset_fence(frame);
+        reset_commands(frame);
 
-        begin_draw_to_swapchain_commands(frame_idx);
-        submit_draw_to_swapchain_commands(frame_idx);
-        present_swapchain_image(frame_idx);
+        transfer_frame_data(frame);
+        submit_compute_commands(frame);
+        begin_draw_to_swapchain_commands(frame);
+        submit_draw_to_swapchain_commands(frame);
+        present_swapchain_image(frame);
     }
 }
 
 
-static void begin_draw_to_swapchain_commands(const u32 frame_idx)
+static void transfer_frame_uniform(renderer::frame_t* frame)
 {
-    const auto cmd = renderer::frames[frame_idx].draw_to_swapchain_cmd_buffer;
+    const auto gpu_transfer_work = frame->gpu_transfer_work;
+
+    math::quaternion_t camera_rotation;
+    math::vector4_t camera_position = {15.0f, 20.0f, 15.0f, 0.0f};
+    math::quaternion::from_euler(&camera_rotation, math::degree_to_radian(-39.23f), math::degree_to_radian(45.0f), 0.0f);
+
+
+    const auto frame_data_uniform = resource::gpu_transfer_work::memory_pointer<resource::shader::frame_uniform_t>(gpu_transfer_work);
+    const auto frame_data_uniform_src_offset = resource::gpu_transfer_work::memory_offset(gpu_transfer_work);
+
+    frame_data_uniform->viewport_size.width = (f32) renderer::window_width;
+    frame_data_uniform->viewport_size.height = (f32) renderer::window_height;
+    frame_data_uniform->ndc_scale.width = 2.0f / (f32) renderer::window_width;
+    frame_data_uniform->ndc_scale.height = 2.0f / (f32) renderer::window_height;
+
+    math::matrix4x4::identity(&frame_data_uniform->projection);
+    math::matrix4x4::identity(&frame_data_uniform->view);
+    math::matrix4x4::perspective(&frame_data_uniform->projection, (f32) renderer::window_width / (f32) renderer::window_height, math::degree_to_radian(60), 0.01f, 1000.0f);
+    math::matrix4x4::look_at(&frame_data_uniform->view, &camera_position, &camera_rotation);
+    math::matrix4x4::multiply(&frame_data_uniform->view_projection, &frame_data_uniform->projection, &frame_data_uniform->view);
+
+
+    resource::gpu_transfer_work_t::cmd_t transfer_cmd = {};
+    transfer_cmd.buffer.dst = frame->data_buffer;
+    transfer_cmd.buffer.dst_offset = frame->data_offset.frame_uniform;
+    transfer_cmd.buffer.src_offset = frame_data_uniform_src_offset;
+    transfer_cmd.buffer.src_size = sizeof(resource::shader::frame_uniform_t);
+    transfer_cmd.memory_barrier.stage_mask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    transfer_cmd.memory_barrier.access_mask = VK_ACCESS_2_UNIFORM_READ_BIT;
+    resource::gpu_transfer_work::send_buffer_cmd(gpu_transfer_work, &transfer_cmd);
+}
+
+
+static void transfer_frame_data(renderer::frame_t* frame)
+{
+    const auto gpu_transfer_work = frame->gpu_transfer_work;
+
+    resource::gpu_transfer_work::begin(gpu_transfer_work);
+    transfer_frame_uniform(frame);
+    resource::gpu_transfer_work::submit(gpu_transfer_work, nullptr);
+}
+
+
+static void submit_compute_commands(renderer::frame_t* frame)
+{
+    const auto cmd = frame->compute_cmd_buffer;
+
+    VkCommandBufferBeginInfo command_buffer_begin_info = {};
+    command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    command_buffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    auto result = vulkan::vkBeginCommandBuffer(cmd, &command_buffer_begin_info);
+    if (result)
+    {
+        logger::critical_error(logger::code::vkBeginCommandBuffer_compute, result);
+    }
+
+
+
+    resource::pipeline_layout::cull_mesh::push_constant_t cull_mesh_push_constant = {};
+    cull_mesh_push_constant.instance_count = 1;
+    cull_mesh_push_constant.indirect_draw_cmd_count = 1;
+
+    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, frame->cull_mesh_pipeline);
+    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, frame->cull_mesh_pipeline_layout, 0, resource::pipeline_layout::cull_mesh::descriptor_count, frame->descriptor_set.cull_mesh_array, 0, nullptr);
+    vulkan::vkCmdPushConstants(cmd, frame->cull_mesh_pipeline_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(cull_mesh_push_constant), &cull_mesh_push_constant);
+    vulkan::vkCmdDispatch(cmd, (cull_mesh_push_constant.indirect_draw_cmd_count + frame->compute_shader_wave_size - 1) / frame->compute_shader_wave_size, 1, 1);
+
+
+    VkBufferMemoryBarrier2 buffer_memory_barrier[2] = {};
+    VkDependencyInfo barrier_dependency_info = {};
+
+    buffer_memory_barrier[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+    buffer_memory_barrier[0].srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    buffer_memory_barrier[0].srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+    buffer_memory_barrier[0].dstStageMask = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+    buffer_memory_barrier[0].dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+    buffer_memory_barrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    buffer_memory_barrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    buffer_memory_barrier[0].buffer = frame->data_buffer;
+    buffer_memory_barrier[0].offset = frame->data_offset.mesh_instance_indices;
+    buffer_memory_barrier[0].size = sizeof(resource::shader::mesh_instance_index_t) * cull_mesh_push_constant.instance_count;
+    buffer_memory_barrier[1].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+    buffer_memory_barrier[1].srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    buffer_memory_barrier[1].srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+    buffer_memory_barrier[1].dstStageMask = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
+    buffer_memory_barrier[1].dstAccessMask = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
+    buffer_memory_barrier[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    buffer_memory_barrier[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    buffer_memory_barrier[1].buffer = frame->data_buffer;
+    buffer_memory_barrier[1].offset = frame->data_offset.mesh_indirect_draw_cmds;
+    buffer_memory_barrier[1].size = sizeof(resource::shader::mesh_indirect_draw_cmd_t) * cull_mesh_push_constant.indirect_draw_cmd_count;
+
+    barrier_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+    barrier_dependency_info.bufferMemoryBarrierCount = 2;
+    barrier_dependency_info.pBufferMemoryBarriers = buffer_memory_barrier;
+
+    vulkan::vkCmdPipelineBarrier2(cmd, &barrier_dependency_info);
+
+
+    result = vulkan::vkEndCommandBuffer(cmd);
+    if (result)
+    {
+        logger::critical_error(logger::code::vkEndCommandBuffer_compute, result);
+    }
+
+
+    VkSemaphoreSubmitInfo wait_semaphore_info = {};
+    VkCommandBufferSubmitInfo cmd_buffer_submit_info = {};
+    VkSemaphoreSubmitInfo signal_semaphore_info = {};
+    VkSubmitInfo2 submit_info = {};
+
+    wait_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+    wait_semaphore_info.semaphore = frame->gpu_transfer_completed;
+    wait_semaphore_info.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+
+    cmd_buffer_submit_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+    cmd_buffer_submit_info.commandBuffer = cmd;
+
+    signal_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+    signal_semaphore_info.semaphore = frame->compute_completed;
+    signal_semaphore_info.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+    submit_info.waitSemaphoreInfoCount = 1;
+    submit_info.pWaitSemaphoreInfos = &wait_semaphore_info;
+    submit_info.commandBufferInfoCount = 1;
+    submit_info.pCommandBufferInfos = &cmd_buffer_submit_info;
+    submit_info.signalSemaphoreInfoCount = 1;
+    submit_info.pSignalSemaphoreInfos = &signal_semaphore_info;
+
+    renderer::lock_queue_mutex();
+    result = vulkan::vkQueueSubmit2(renderer::default_queue, 1, &submit_info, nullptr);
+    renderer::unlock_queue_mutex();
+
+    if (result)
+    {
+        logger::critical_error(logger::code::vkQueueSubmit2_compute, result);
+    }
+}
+
+
+static void begin_draw_to_swapchain_commands(renderer::frame_t* frame)
+{
+    const auto cmd = frame->draw_to_swapchain_cmd_buffer;
 
     VkCommandBufferBeginInfo command_buffer_begin_info = {};
     command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -78,7 +230,7 @@ static void begin_draw_to_swapchain_commands(const u32 frame_idx)
     attachment_image_barriers[0].newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
     attachment_image_barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     attachment_image_barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[0].image = renderer::swapchain_image_array[renderer::frames[frame_idx].acquired_swapchain_image_idx];
+    attachment_image_barriers[0].image = renderer::swapchain_image_array[frame->acquired_swapchain_image_idx];
     attachment_image_barriers[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     attachment_image_barriers[0].subresourceRange.levelCount = 1;
     attachment_image_barriers[0].subresourceRange.layerCount = 1;
@@ -119,7 +271,7 @@ static void begin_draw_to_swapchain_commands(const u32 frame_idx)
     VkRenderingAttachmentInfo depth_attachment_info = {};
 
     color_attachment_info[0].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    color_attachment_info[0].imageView = renderer::swapchain_image_view_array[renderer::frames[frame_idx].acquired_swapchain_image_idx];
+    color_attachment_info[0].imageView = renderer::swapchain_image_view_array[frame->acquired_swapchain_image_idx];
     color_attachment_info[0].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
     color_attachment_info[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     color_attachment_info[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -168,9 +320,9 @@ static void begin_draw_to_swapchain_commands(const u32 frame_idx)
 }
 
 
-static void submit_draw_to_swapchain_commands(const u32 frame_idx)
+static void submit_draw_to_swapchain_commands(renderer::frame_t* frame)
 {
-    const auto cmd = renderer::frames[frame_idx].draw_to_swapchain_cmd_buffer;
+    const auto cmd = frame->draw_to_swapchain_cmd_buffer;
 
     vulkan::vkCmdEndRendering(cmd);
 
@@ -192,7 +344,7 @@ static void submit_draw_to_swapchain_commands(const u32 frame_idx)
     attachment_image_barriers[0].newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     attachment_image_barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     attachment_image_barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[0].image = renderer::swapchain_image_array[renderer::frames[frame_idx].acquired_swapchain_image_idx];
+    attachment_image_barriers[0].image = renderer::swapchain_image_array[frame->acquired_swapchain_image_idx];
     attachment_image_barriers[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     attachment_image_barriers[0].subresourceRange.levelCount = 1;
     attachment_image_barriers[0].subresourceRange.layerCount = 1;
@@ -221,21 +373,24 @@ static void submit_draw_to_swapchain_commands(const u32 frame_idx)
     }
 
 
-    constexpr u32 wait_semaphore_info_count = 1;
+    constexpr u32 wait_semaphore_info_count = 2;
     VkSemaphoreSubmitInfo wait_semaphore_info[wait_semaphore_info_count] = {};
     VkCommandBufferSubmitInfo cmd_buffer_submit_info = {};
     VkSemaphoreSubmitInfo signal_semaphore_info = {};
     VkSubmitInfo2 submit_info = {};
 
     wait_semaphore_info[0].sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-    wait_semaphore_info[0].semaphore = renderer::frames[frame_idx].acquired_swapchain_image;
+    wait_semaphore_info[0].semaphore = frame->acquired_swapchain_image;
     wait_semaphore_info[0].stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    wait_semaphore_info[1].sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+    wait_semaphore_info[1].semaphore = frame->compute_completed;
+    wait_semaphore_info[1].stageMask = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
 
     cmd_buffer_submit_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
     cmd_buffer_submit_info.commandBuffer = cmd;
 
     signal_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-    signal_semaphore_info.semaphore = renderer::frames[frame_idx].draw_to_swapchain_completed;
+    signal_semaphore_info.semaphore = frame->draw_to_swapchain_completed;
     signal_semaphore_info.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
 
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
@@ -247,7 +402,7 @@ static void submit_draw_to_swapchain_commands(const u32 frame_idx)
     submit_info.pSignalSemaphoreInfos = &signal_semaphore_info;
 
     renderer::lock_queue_mutex();
-    result = vulkan::vkQueueSubmit2(renderer::default_queue, 1, &submit_info, renderer::frames[frame_idx].work_completed);
+    result = vulkan::vkQueueSubmit2(renderer::default_queue, 1, &submit_info, frame->work_completed);
     renderer::unlock_queue_mutex();
 
     if (result)
@@ -257,9 +412,9 @@ static void submit_draw_to_swapchain_commands(const u32 frame_idx)
 }
 
 
-static b8 acquire_swapchain_image(const u32 frame_idx)
+static b8 acquire_swapchain_image(renderer::frame_t* frame)
 {
-    const auto result = vulkan::vkAcquireNextImageKHR(renderer::device, renderer::swapchain, 0, renderer::frames[frame_idx].acquired_swapchain_image, nullptr, &renderer::frames[frame_idx].acquired_swapchain_image_idx);
+    const auto result = vulkan::vkAcquireNextImageKHR(renderer::device, renderer::swapchain, 0, frame->acquired_swapchain_image, nullptr, &frame->acquired_swapchain_image_idx);
 
     if (VK_SUCCESS != result)
     {
@@ -277,15 +432,15 @@ static b8 acquire_swapchain_image(const u32 frame_idx)
 }
 
 
-static void present_swapchain_image(const u32 frame_idx)
+static void present_swapchain_image(renderer::frame_t* frame)
 {
     VkPresentInfoKHR present_info = {};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     present_info.waitSemaphoreCount = 1;
-    present_info.pWaitSemaphores = &renderer::frames[frame_idx].draw_to_swapchain_completed;
+    present_info.pWaitSemaphores = &frame->draw_to_swapchain_completed;
     present_info.swapchainCount = 1;
     present_info.pSwapchains = &renderer::swapchain;
-    present_info.pImageIndices = &renderer::frames[frame_idx].acquired_swapchain_image_idx;
+    present_info.pImageIndices = &frame->acquired_swapchain_image_idx;
 
     renderer::lock_queue_mutex();
     const VkResult result = vulkan::vkQueuePresentKHR(renderer::default_queue, &present_info);
@@ -300,17 +455,17 @@ static void present_swapchain_image(const u32 frame_idx)
 }
 
 
-static void reset_commands(const u32 frame_idx)
+static void reset_commands(renderer::frame_t* frame)
 {
-    vulkan::vkResetCommandPool(renderer::device, renderer::frames[frame_idx].default_command_pool, 0);
+    vulkan::vkResetCommandPool(renderer::device, frame->default_command_pool, 0);
 }
 
 
-static void wait_for_fence(const u32 frame_idx)
+static void wait_for_fence(renderer::frame_t* frame)
 {
     VkResult result;
 
-    result = vulkan::vkWaitForFences(renderer::device, 1, &renderer::frames[frame_idx].work_completed, VK_TRUE, UINT64_MAX);
+    result = vulkan::vkWaitForFences(renderer::device, 1, &frame->work_completed, VK_TRUE, UINT64_MAX);
     if (result)
     {
         logger::critical_error(logger::code::vkWaitForFences_frame, result);
@@ -318,11 +473,11 @@ static void wait_for_fence(const u32 frame_idx)
 }
 
 
-static void reset_fence(const u32 frame_idx)
+static void reset_fence(renderer::frame_t* frame)
 {
     VkResult result;
 
-    result = vulkan::vkResetFences(renderer::device, 1, &renderer::frames[frame_idx].work_completed);
+    result = vulkan::vkResetFences(renderer::device, 1, &frame->work_completed);
     if (result)
     {
         logger::critical_error(logger::code::vkResetFences_frame, result);

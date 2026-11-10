@@ -1,45 +1,62 @@
 #include <core/types.h>
 
+#include "game/metadata.h"
 
-static void create_semaphores(u8 frame_idx);
-static void create_fences(u8 frame_idx);
-static void create_command_pools(u8 frame_idx);
-static void create_command_buffers(u8 frame_idx);
-static void create_descriptor_pool(u8 frame_idx);
-static void create_descriptor_sets(u8 frame_idx);
-static void create_data_buffer(u8 frame_idx);
-static void update_descriptor_sets(u8 frame_idx);
+
+static void create_semaphores(renderer::frame_t* frame);
+static void create_fences(renderer::frame_t* frame);
+static void create_command_pools(renderer::frame_t* frame);
+static void create_command_buffers(renderer::frame_t* frame);
+static void create_descriptor_pool(renderer::frame_t* frame);
+static void create_descriptor_sets(renderer::frame_t* frame);
+static void create_data_buffer(renderer::frame_t* frame, u8 frame_idx);
+static void update_descriptor_sets(renderer::frame_t* frame);
 
 
 namespace renderer
 {
     void initialize_frames()
     {
+        auto cull_mesh_pipeline = resource::pipeline::find(metadata::resource_package::cull_mesh_pipeline_id);
+
+
+        if (!cull_mesh_pipeline)
+        {
+            logger::critical_error(logger::code::missing_cull_mesh_pipeline, metadata::resource_package::cull_mesh_pipeline_id);
+        }
+
+
         for (u8 f = 0; f < frames_in_flight; ++f)
         {
-            create_semaphores(f);
-            create_fences(f);
-            create_command_pools(f);
-            create_command_buffers(f);
-            create_descriptor_pool(f);
-            create_descriptor_sets(f);
-            create_data_buffer(f);
-            update_descriptor_sets(f);
+            auto frame = &frames[f];
 
-            frames[f].gpu_transfer_work = &resource::gpu_transfer_works[f];
-            frames[f].gpu_transfer_work->booked = true;
-            frames[f].gpu_transfer_completed = frames[f].gpu_transfer_work->transfer_completed;
+            create_semaphores(frame);
+            create_fences(frame);
+            create_command_pools(frame);
+            create_command_buffers(frame);
+            create_descriptor_pool(frame);
+            create_descriptor_sets(frame);
+            create_data_buffer(frame, f);
+            update_descriptor_sets(frame);
+
+            frame->gpu_transfer_work = &resource::gpu_transfer_works[f];
+            frame->gpu_transfer_work->booked = true;
+            frame->gpu_transfer_completed = frame->gpu_transfer_work->transfer_completed;
+
+            frame->cull_mesh_pipeline = cull_mesh_pipeline->handle;
+            frame->cull_mesh_pipeline_layout = cull_mesh_pipeline->layout;
+            frame->compute_shader_wave_size = 32;
         }
     }
 }
 
 
-static void create_fences(const u8 frame_idx)
+static void create_fences(renderer::frame_t* frame)
 {
     constexpr u32 fence_count = 1;
     VkFence *dst[fence_count];
 
-    dst[0] = &renderer::frames[frame_idx].work_completed;
+    dst[0] = &frame->work_completed;
 
     VkFenceCreateInfo fence_create_info = {};
     fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -56,13 +73,14 @@ static void create_fences(const u8 frame_idx)
 }
 
 
-static void create_semaphores(const u8 frame_idx)
+static void create_semaphores(renderer::frame_t* frame)
 {
-    constexpr u32 semaphore_count = 2;
+    constexpr u32 semaphore_count = 3;
     VkSemaphore *dst[semaphore_count];
 
-    dst[0] = &renderer::frames[frame_idx].acquired_swapchain_image;
-    dst[1] = &renderer::frames[frame_idx].draw_to_swapchain_completed;
+    dst[0] = &frame->acquired_swapchain_image;
+    dst[1] = &frame->draw_to_swapchain_completed;
+    dst[2] = &frame->compute_completed;
 
     VkSemaphoreCreateInfo semaphore_create_info = {};
     semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -78,7 +96,7 @@ static void create_semaphores(const u8 frame_idx)
 }
 
 
-static void create_command_pools(const u8 frame_idx)
+static void create_command_pools(renderer::frame_t* frame)
 {
     constexpr u32 command_pool_count = 1;
     struct
@@ -88,7 +106,7 @@ static void create_command_pools(const u8 frame_idx)
     } dst[command_pool_count];
 
     dst[0].queue_family_index = gpu_info::queue->default_family_idx;
-    dst[0].dst = &renderer::frames[frame_idx].default_command_pool;
+    dst[0].dst = &frame->default_command_pool;
 
     VkCommandPoolCreateInfo pool_create_info = {};
     pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -106,23 +124,24 @@ static void create_command_pools(const u8 frame_idx)
 }
 
 
-static void create_command_buffers(const u8 frame_idx)
+static void create_command_buffers(renderer::frame_t* frame)
 {
-    constexpr u32 command_buffer_count = 1;
+    constexpr u32 command_buffer_count = 2;
     struct
     {
         VkCommandPool commandPool;
         VkCommandBuffer *dst;
     } dst[command_buffer_count];
 
-    dst[0].commandPool = renderer::frames[frame_idx].default_command_pool;
-    dst[0].dst = &renderer::frames[frame_idx].draw_to_swapchain_cmd_buffer;
+    dst[0].commandPool = frame->default_command_pool;
+    dst[0].dst = &frame->draw_to_swapchain_cmd_buffer;
+    dst[1].commandPool = frame->default_command_pool;
+    dst[1].dst = &frame->compute_cmd_buffer;
 
-    VkCommandBufferAllocateInfo buffer_alloc_info;
+    VkCommandBufferAllocateInfo buffer_alloc_info = {};
     buffer_alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    buffer_alloc_info.pNext = nullptr;
     buffer_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    buffer_alloc_info.commandBufferCount = command_buffer_count;
+    buffer_alloc_info.commandBufferCount = 1;
 
     for (u32 i = 0; i < command_buffer_count; ++i)
     {
@@ -137,7 +156,7 @@ static void create_command_buffers(const u8 frame_idx)
 }
 
 
-static void create_descriptor_pool(const u8 frame_idx)
+static void create_descriptor_pool(renderer::frame_t* frame)
 {
     constexpr u32 max_sets = 5;
     constexpr u32 sizes_count = 4;
@@ -174,7 +193,7 @@ static void create_descriptor_pool(const u8 frame_idx)
     descriptor_pool_create_info.poolSizeCount = sizes_count;
     descriptor_pool_create_info.pPoolSizes = sizes;
 
-    const auto result = vulkan::vkCreateDescriptorPool(renderer::device, &descriptor_pool_create_info, nullptr, &renderer::frames[frame_idx].descriptor_pool);
+    const auto result = vulkan::vkCreateDescriptorPool(renderer::device, &descriptor_pool_create_info, nullptr, &frame->descriptor_pool);
     if (result)
     {
         logger::critical_error(logger::code::vkCreateDescriptorPool_frame, result);
@@ -182,11 +201,11 @@ static void create_descriptor_pool(const u8 frame_idx)
 }
 
 
-static void create_descriptor_sets(const u8 frame_idx)
+static void create_descriptor_sets(renderer::frame_t* frame)
 {
     VkDescriptorSetAllocateInfo allocate_info = {};
     allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocate_info.descriptorPool = renderer::frames[frame_idx].descriptor_pool;
+    allocate_info.descriptorPool = frame->descriptor_pool;
     allocate_info.descriptorSetCount = 1;
 
     constexpr u32 set_count = 5;
@@ -197,17 +216,17 @@ static void create_descriptor_sets(const u8 frame_idx)
     } data[set_count];
 
     data[0].layout = resource::descriptor_set_layouts.frame_data;
-    data[0].dst = &renderer::frames[frame_idx].descriptor_set.frame_data;
+    data[0].dst = &frame->descriptor_set.frame_data;
     data[1].layout = resource::descriptor_set_layouts.mesh_data;
-    data[1].dst = &renderer::frames[frame_idx].descriptor_set.mesh_data;
+    data[1].dst = &frame->descriptor_set.mesh_data;
     data[3].layout = resource::descriptor_set_layouts.image_data;
-    data[3].dst = &renderer::frames[frame_idx].descriptor_set.image_data;
+    data[3].dst = &frame->descriptor_set.image_data;
 
     data[2].layout = resource::descriptor_set_layouts.mesh_cull_data;
-    data[2].dst = &renderer::frames[frame_idx].descriptor_set.mesh_cull_data;
+    data[2].dst = &frame->descriptor_set.mesh_cull_data;
 
     data[4].layout = resource::descriptor_set_layouts.ui_data;
-    data[4].dst = &renderer::frames[frame_idx].descriptor_set.ui_data;
+    data[4].dst = &frame->descriptor_set.ui_data;
 
     for (u32 i = 0; i < set_count; ++i)
     {
@@ -220,20 +239,20 @@ static void create_descriptor_sets(const u8 frame_idx)
         }
     }
 
-    renderer::frames[frame_idx].descriptor_set.draw_mesh_array[resource::pipeline_layout::draw_mesh::frame_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.frame_data;
-    renderer::frames[frame_idx].descriptor_set.draw_mesh_array[resource::pipeline_layout::draw_mesh::mesh_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.mesh_data;
-    renderer::frames[frame_idx].descriptor_set.draw_mesh_array[resource::pipeline_layout::draw_mesh::image_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.image_data;
+    frame->descriptor_set.draw_mesh_array[resource::pipeline_layout::draw_mesh::frame_data_descriptor_idx] = frame->descriptor_set.frame_data;
+    frame->descriptor_set.draw_mesh_array[resource::pipeline_layout::draw_mesh::mesh_data_descriptor_idx] = frame->descriptor_set.mesh_data;
+    frame->descriptor_set.draw_mesh_array[resource::pipeline_layout::draw_mesh::image_data_descriptor_idx] = frame->descriptor_set.image_data;
 
-    renderer::frames[frame_idx].descriptor_set.draw_ui_array[resource::pipeline_layout::draw_ui::frame_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.frame_data;
-    renderer::frames[frame_idx].descriptor_set.draw_ui_array[resource::pipeline_layout::draw_ui::ui_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.ui_data;
-    renderer::frames[frame_idx].descriptor_set.draw_ui_array[resource::pipeline_layout::draw_ui::image_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.image_data;
+    frame->descriptor_set.draw_ui_array[resource::pipeline_layout::draw_ui::frame_data_descriptor_idx] = frame->descriptor_set.frame_data;
+    frame->descriptor_set.draw_ui_array[resource::pipeline_layout::draw_ui::ui_data_descriptor_idx] = frame->descriptor_set.ui_data;
+    frame->descriptor_set.draw_ui_array[resource::pipeline_layout::draw_ui::image_data_descriptor_idx] = frame->descriptor_set.image_data;
 
-    renderer::frames[frame_idx].descriptor_set.cull_mesh_array[resource::pipeline_layout::cull_mesh::frame_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.frame_data;
-    renderer::frames[frame_idx].descriptor_set.cull_mesh_array[resource::pipeline_layout::cull_mesh::mesh_cull_data_descriptor_idx] = renderer::frames[frame_idx].descriptor_set.mesh_cull_data;
+    frame->descriptor_set.cull_mesh_array[resource::pipeline_layout::cull_mesh::frame_data_descriptor_idx] = frame->descriptor_set.frame_data;
+    frame->descriptor_set.cull_mesh_array[resource::pipeline_layout::cull_mesh::mesh_cull_data_descriptor_idx] = frame->descriptor_set.mesh_cull_data;
 }
 
 
-static void create_data_buffer(const u8 frame_idx)
+static void create_data_buffer(renderer::frame_t* frame, const u8 frame_idx)
 {
     constexpr u32 total_offset_count = 7;
     struct _offsets_t
@@ -247,7 +266,7 @@ static void create_data_buffer(const u8 frame_idx)
 
 
     constexpr u32 uniform_alignment_count = 1;
-    offsets[0].dst_offset = &renderer::frames[frame_idx].data_offset.frame_uniform;
+    offsets[0].dst_offset = &frame->data_offset.frame_uniform;
     offsets[0].memory_size = sizeof(resource::shader::frame_uniform_t);
 
     for (u32 i = 0; i < uniform_alignment_count; ++i)
@@ -258,17 +277,17 @@ static void create_data_buffer(const u8 frame_idx)
     }
 
 
-    offsets[1].dst_offset = &renderer::frames[frame_idx].data_offset.mesh_indirect_draw_cmds_data;
+    offsets[1].dst_offset = &frame->data_offset.mesh_indirect_draw_cmds_data;
     offsets[1].memory_size = settings::memory::frame_mesh_indirect_draw_cmd_data_buffer_size;
-    offsets[2].dst_offset = &renderer::frames[frame_idx].data_offset.mesh_indirect_draw_cmds;
+    offsets[2].dst_offset = &frame->data_offset.mesh_indirect_draw_cmds;
     offsets[2].memory_size = settings::memory::frame_mesh_indirect_draw_cmd_buffer_size;
-    offsets[3].dst_offset = &renderer::frames[frame_idx].data_offset.mesh_instance_indices;
+    offsets[3].dst_offset = &frame->data_offset.mesh_instance_indices;
     offsets[3].memory_size = settings::memory::frame_mesh_instance_index_buffer_size;
-    offsets[4].dst_offset = &renderer::frames[frame_idx].data_offset.mesh_instances;
+    offsets[4].dst_offset = &frame->data_offset.mesh_instances;
     offsets[4].memory_size = settings::memory::frame_mesh_instance_buffer_size;
-    offsets[5].dst_offset = &renderer::frames[frame_idx].data_offset.materials;
+    offsets[5].dst_offset = &frame->data_offset.materials;
     offsets[5].memory_size = settings::memory::frame_material_buffer_size;
-    offsets[6].dst_offset = &renderer::frames[frame_idx].data_offset.ui_instances;
+    offsets[6].dst_offset = &frame->data_offset.ui_instances;
     offsets[6].memory_size = settings::memory::frame_ui_instance_buffer_size;
 
     for (u32 i = uniform_alignment_count; i < total_offset_count; ++i)
@@ -292,12 +311,12 @@ static void create_data_buffer(const u8 frame_idx)
         return;
     }
 
-    renderer::frames[frame_idx].data_buffer = buffer->handle;
+    frame->data_buffer = buffer->handle;
     buffer->used = total_buffer_size;
 }
 
 
-static void update_descriptor_sets(const u8 frame_idx)
+static void update_descriptor_sets(renderer::frame_t* frame)
 {
     constexpr uint32_t write_count = 9;
     VkDescriptorBufferInfo descriptor_buffer_info[write_count] = {};
@@ -305,74 +324,74 @@ static void update_descriptor_sets(const u8 frame_idx)
 
     for (u32 i = 0; i < write_count; ++i)
     {
-        descriptor_buffer_info[i].buffer = renderer::frames[frame_idx].data_buffer;
+        descriptor_buffer_info[i].buffer = frame->data_buffer;
         descriptor_write[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptor_write[i].pBufferInfo = &descriptor_buffer_info[i];;
     }
 
 
-    descriptor_buffer_info[0].offset = renderer::frames[frame_idx].data_offset.frame_uniform;
+    descriptor_buffer_info[0].offset = frame->data_offset.frame_uniform;
     descriptor_buffer_info[0].range = sizeof(resource::shader::frame_uniform_t);
-    descriptor_write[0].dstSet = renderer::frames[frame_idx].descriptor_set.frame_data;
+    descriptor_write[0].dstSet = frame->descriptor_set.frame_data;
     descriptor_write[0].dstBinding = resource::descriptor_set_layout::frame_data::uniform_binding_idx;
     descriptor_write[0].descriptorCount = 1;
     descriptor_write[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 
-    descriptor_buffer_info[1].offset = renderer::frames[frame_idx].data_offset.mesh_indirect_draw_cmds_data;
+    descriptor_buffer_info[1].offset = frame->data_offset.mesh_indirect_draw_cmds_data;
     descriptor_buffer_info[1].range = settings::memory::frame_mesh_indirect_draw_cmd_data_buffer_size;
-    descriptor_write[1].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_cull_data;
+    descriptor_write[1].dstSet = frame->descriptor_set.mesh_cull_data;
     descriptor_write[1].dstBinding = resource::descriptor_set_layout::mesh_cull_data::indirect_draw_cmd_data_binding_idx;
     descriptor_write[1].descriptorCount = 1;
     descriptor_write[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
-    descriptor_buffer_info[2].offset = renderer::frames[frame_idx].data_offset.mesh_indirect_draw_cmds;
+    descriptor_buffer_info[2].offset = frame->data_offset.mesh_indirect_draw_cmds;
     descriptor_buffer_info[2].range = settings::memory::frame_mesh_indirect_draw_cmd_buffer_size;
-    descriptor_write[2].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_cull_data;
+    descriptor_write[2].dstSet = frame->descriptor_set.mesh_cull_data;
     descriptor_write[2].dstBinding = resource::descriptor_set_layout::mesh_cull_data::indirect_draw_cmd_binding_idx;
     descriptor_write[2].descriptorCount = 1;
     descriptor_write[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
-    descriptor_buffer_info[3].offset = renderer::frames[frame_idx].data_offset.mesh_instance_indices;
+    descriptor_buffer_info[3].offset = frame->data_offset.mesh_instance_indices;
     descriptor_buffer_info[3].range = settings::memory::frame_mesh_instance_index_buffer_size;
-    descriptor_write[3].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_cull_data;
+    descriptor_write[3].dstSet = frame->descriptor_set.mesh_cull_data;
     descriptor_write[3].dstBinding = resource::descriptor_set_layout::mesh_cull_data::instance_indices_binding_idx;
     descriptor_write[3].descriptorCount = 1;
     descriptor_write[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
-    descriptor_buffer_info[4].offset = renderer::frames[frame_idx].data_offset.mesh_instances;
+    descriptor_buffer_info[4].offset = frame->data_offset.mesh_instances;
     descriptor_buffer_info[4].range = settings::memory::frame_mesh_instance_buffer_size;
-    descriptor_write[4].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_cull_data;
+    descriptor_write[4].dstSet = frame->descriptor_set.mesh_cull_data;
     descriptor_write[4].dstBinding = resource::descriptor_set_layout::mesh_cull_data::instances_binding_idx;
     descriptor_write[4].descriptorCount = 1;
     descriptor_write[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
 
-    descriptor_buffer_info[5].offset = renderer::frames[frame_idx].data_offset.mesh_instance_indices;
+    descriptor_buffer_info[5].offset = frame->data_offset.mesh_instance_indices;
     descriptor_buffer_info[5].range = settings::memory::frame_mesh_instance_index_buffer_size;
-    descriptor_write[5].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_data;
+    descriptor_write[5].dstSet = frame->descriptor_set.mesh_data;
     descriptor_write[5].dstBinding = resource::descriptor_set_layout::mesh_data::instance_indices_binding_idx;
     descriptor_write[5].descriptorCount = 1;
     descriptor_write[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
-    descriptor_buffer_info[6].offset = renderer::frames[frame_idx].data_offset.mesh_instances;
+    descriptor_buffer_info[6].offset = frame->data_offset.mesh_instances;
     descriptor_buffer_info[6].range = settings::memory::frame_mesh_instance_buffer_size;
-    descriptor_write[6].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_data;
+    descriptor_write[6].dstSet = frame->descriptor_set.mesh_data;
     descriptor_write[6].dstBinding = resource::descriptor_set_layout::mesh_data::instances_binding_idx;
     descriptor_write[6].descriptorCount = 1;
     descriptor_write[6].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
-    descriptor_buffer_info[7].offset = renderer::frames[frame_idx].data_offset.materials;
+    descriptor_buffer_info[7].offset = frame->data_offset.materials;
     descriptor_buffer_info[7].range = settings::memory::frame_material_buffer_size;
-    descriptor_write[7].dstSet = renderer::frames[frame_idx].descriptor_set.mesh_data;
+    descriptor_write[7].dstSet = frame->descriptor_set.mesh_data;
     descriptor_write[7].dstBinding = resource::descriptor_set_layout::mesh_data::materials_binding_idx;
     descriptor_write[7].descriptorCount = 1;
     descriptor_write[7].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
 
-    descriptor_buffer_info[8].offset = renderer::frames[frame_idx].data_offset.ui_instances;
+    descriptor_buffer_info[8].offset = frame->data_offset.ui_instances;
     descriptor_buffer_info[8].range = settings::memory::frame_ui_instance_buffer_size;
-    descriptor_write[8].dstSet = renderer::frames[frame_idx].descriptor_set.ui_data;
+    descriptor_write[8].dstSet = frame->descriptor_set.ui_data;
     descriptor_write[8].dstBinding = resource::descriptor_set_layout::ui_data::instances_binding_idx;
     descriptor_write[8].descriptorCount = 1;
     descriptor_write[8].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
