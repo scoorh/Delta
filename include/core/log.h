@@ -79,6 +79,17 @@ namespace logger
         vkGetSwapchainImagesKHR,
         vkCreateImageView_swapchain,
 
+        vkCreateFence_gpu_transfer_work,
+        vkCreateSemaphore_gpu_transfer_work,
+        vkCreateCommandPool_gpu_transfer_work,
+        vkAllocateCommandBuffers_gpu_transfer_work,
+        create_gpu_transfer_work_staging_buffer,
+        vkMapMemory_gpu_transfer_work_staging_buffer,
+        vkWaitForFences_gpu_transfer_work,
+        vkBeginCommandBuffer_gpu_transfer_work,
+        vkEndCommandBuffer_gpu_transfer_work,
+        vkQueueSubmit2_gpu_transfer_work,
+
         vkCreateSemaphore_frame,
         vkCreateFence_frame,
         vkCreateCommandPool_frame,

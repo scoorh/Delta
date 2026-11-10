@@ -2,6 +2,7 @@
 
 
 static void wait_for_fence(u32 frame_idx);
+static void reset_fence(u32 frame_idx);
 static void reset_commands(u32 frame_idx);
 static b8 acquire_swapchain_image(u32 frame_idx);
 static void present_swapchain_image(u32 frame_idx);
@@ -20,6 +21,7 @@ namespace renderer
         initialize_swapchain();
         resource::descriptor_set_layout::initialize();
         resource::pipeline_layout::initialize();
+        resource::gpu_transfer_work::initialize();
         initialize_frames();
     }
 
@@ -27,18 +29,19 @@ namespace renderer
     void draw_frame()
     {
         const u32 frame_idx = current_frame % frames_in_flight;
+        ++current_frame;
 
         wait_for_fence(frame_idx);
 
         if (!acquire_swapchain_image(frame_idx))
             return;
 
+        reset_fence(frame_idx);
         reset_commands(frame_idx);
+
         begin_draw_to_swapchain_commands(frame_idx);
         submit_draw_to_swapchain_commands(frame_idx);
         present_swapchain_image(frame_idx);
-
-        ++current_frame;
     }
 }
 
@@ -312,6 +315,12 @@ static void wait_for_fence(const u32 frame_idx)
     {
         logger::critical_error(logger::code::vkWaitForFences_frame, result);
     }
+}
+
+
+static void reset_fence(const u32 frame_idx)
+{
+    VkResult result;
 
     result = vulkan::vkResetFences(renderer::device, 1, &renderer::frames[frame_idx].work_completed);
     if (result)
@@ -319,3 +328,7 @@ static void wait_for_fence(const u32 frame_idx)
         logger::critical_error(logger::code::vkResetFences_frame, result);
     }
 }
+
+
+
+

@@ -17,6 +17,8 @@ namespace settings
         memory::material_resource_pool_size = 128;
         memory::mesh_resource_pool_size = 128;
 
+        memory::gpu_transfer_work_buffer_size = 4 << 20;
+
         memory::gpu_block_array_size = 128;
         memory::free_allocation_array_size = 128;
 

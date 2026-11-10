@@ -68,6 +68,7 @@ namespace vulkan
     inline PFN_vkAllocateDescriptorSets vkAllocateDescriptorSets = nullptr;
     inline PFN_vkUpdateDescriptorSets vkUpdateDescriptorSets = nullptr;
 
+    inline PFN_vkGetFenceStatus vkGetFenceStatus = nullptr;
     inline PFN_vkWaitForFences vkWaitForFences = nullptr;
     inline PFN_vkResetFences vkResetFences = nullptr;
     inline PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR = nullptr;

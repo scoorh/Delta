@@ -26,6 +26,8 @@ namespace settings
         inline u32 gpu_block_array_size = 0;
         inline u32 free_allocation_array_size = 0;
 
+        inline u32 gpu_transfer_work_buffer_size = 0;
+
         inline u32 frame_mesh_indirect_draw_cmd_data_buffer_size = 0;
         inline u32 frame_mesh_indirect_draw_cmd_buffer_size = 0;
         inline u32 frame_mesh_instance_index_buffer_size = 0;

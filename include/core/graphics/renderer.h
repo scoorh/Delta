@@ -9,11 +9,6 @@ namespace renderer
     constexpr u32 frames_in_flight = 2;
 
     constexpr u32 max_swapchain_image_count = 4;
-
-    constexpr u16 interaction_buffer_image_id = 65000;
-    constexpr u16 depth_buffer_image_id = 65001;
-    constexpr u16 frame_data_buffer_id = 65000;
-    constexpr u16 frame_data_buffer_id_N = 65005;
 }
 
 
@@ -71,6 +66,9 @@ namespace renderer
         u32 acquired_swapchain_image_idx;
         VkSemaphore acquired_swapchain_image;
         VkSemaphore draw_to_swapchain_completed;
+        VkSemaphore gpu_transfer_completed;
+
+        resource::gpu_transfer_work_t* gpu_transfer_work;
 
         VkCommandPool default_command_pool;
         VkCommandBuffer draw_to_swapchain_cmd_buffer;

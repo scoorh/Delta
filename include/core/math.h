@@ -175,6 +175,12 @@ namespace math
     }
 
 
+    inline u64 miliseconds_to_nanoseconds(const u64 ms)
+    {
+        return ms * 1000000;
+    }
+
+
     inline f32 degree_to_radian(const f32 d)
     {
         return d * pi_over_180;

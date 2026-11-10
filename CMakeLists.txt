@@ -62,6 +62,7 @@ add_executable(Delta ${SOURCES}
         include/core/metadata.h
         src/core/resource/mesh.cpp
         include/game/metadata.h
+        src/core/resource/gpu_transfer_work.cpp
 )
 
 

@@ -25,6 +25,10 @@ namespace renderer
             create_descriptor_sets(f);
             create_data_buffer(f);
             update_descriptor_sets(f);
+
+            frames[f].gpu_transfer_work = &resource::gpu_transfer_works[f];
+            frames[f].gpu_transfer_work->booked = true;
+            frames[f].gpu_transfer_completed = frames[f].gpu_transfer_work->transfer_completed;
         }
     }
 }
@@ -276,7 +280,7 @@ static void create_data_buffer(const u8 frame_idx)
 
 
     resource::buffer::setup_t buffer_setup = {};
-    buffer_setup.id = renderer::frame_data_buffer_id + frame_idx;
+    buffer_setup.id = resource::frame_data_buffer_id + frame_idx;
     buffer_setup.size = total_buffer_size;
     buffer_setup.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     buffer_setup.gpu_local_memory = true;

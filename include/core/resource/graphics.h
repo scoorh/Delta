@@ -2,6 +2,22 @@
 
 
 // ==================================================
+// resource constants
+// ==================================================
+namespace resource
+{
+    constexpr u32 gpu_transfer_work_count = 4;
+
+    constexpr u16 interaction_buffer_image_id = 65000;
+    constexpr u16 depth_buffer_image_id = 65001;
+    constexpr u16 frame_data_buffer_id = 65000;
+    constexpr u16 frame_data_buffer_id_N = 65005;
+    constexpr u16 gpu_transfer_work_staging_buffer_id = 65006;
+    constexpr u16 gpu_transfer_work_staging_buffer_id_N = 65016;
+}
+
+
+// ==================================================
 // resource types
 // ==================================================
 namespace resource
@@ -229,7 +245,9 @@ namespace resource
         static_assert(sizeof(setup_t) % 4 == 0);
     }
 
-    struct mesh_t {
+
+    struct mesh_t
+    {
         VkBuffer index_buffer;
         VkBuffer position_vertex_buffer;
         VkBuffer attribute_vertex_buffer;
@@ -244,6 +262,63 @@ namespace resource
         u32 attribute_vertex_buffer_offset;
     };
 
+
+    // ==================================================
+    // gpu transfer work
+    // ==================================================
+    struct gpu_transfer_work_t
+    {
+        struct cmd_t
+        {
+            struct
+            {
+                VkPipelineStageFlags2 stage_mask;
+                VkAccessFlags2 access_mask;
+            } memory_barrier;
+
+            union
+            {
+                struct
+                {
+                    VkBuffer dst;
+                    VkDeviceSize src_offset;
+                    VkDeviceSize dst_offset;
+                    u32 src_size;
+                } buffer;
+
+                struct
+                {
+                    VkImage dst;
+                    VkDeviceSize src_offset;
+                    u32 src_width;
+                    u32 src_height;
+                    u32 src_size;
+                } image;
+
+                struct
+                {
+                    VkBuffer dst;
+                    VkDeviceSize dst_offset;
+                    VkImage src;
+                    s32 src_x_offset;
+                    s32 src_y_offset;
+                    u32 src_width;
+                    u32 src_height;
+                    u32 src_size;
+                } attachment_readback;
+            };
+        };
+
+        b8 booked;
+        u32 used_memory;
+        c8 *src_memory;
+        VkBuffer src_buffer;
+        VkFence all_completed;
+        VkSemaphore transfer_completed;
+        VkCommandPool default_cmd_pool;
+        VkCommandBuffer transfer_cmd_buffer;
+        VkCommandBuffer readback_cmd_buffer;
+    };
 }
 
 
@@ -278,10 +353,10 @@ namespace resource::buffer
     void destroy(buffer_t *buffer);
     buffer_t *find(u16 id);
 
-    b8 reserve_space(buffer_t* buffer, u32 size, u32* offset);
-    void reset_to_offset(buffer_t* buffer, u32 offset);
+    b8 reserve_space(buffer_t *buffer, u32 size, u32 *offset);
+    void reset_to_offset(buffer_t *buffer, u32 offset);
 
-    void update_frame_descriptors(const buffer_t* buffer);
+    void update_frame_descriptors(const buffer_t *buffer);
 }
 
 
@@ -331,6 +406,37 @@ namespace resource::pipeline
 
 
 // ==================================================
+// gpu transfer functions
+// ==================================================
+namespace resource::gpu_transfer_work
+{
+    void initialize();
+
+    gpu_transfer_work_t *book();
+    void unbook(gpu_transfer_work_t *work);
+
+    b8 begin(gpu_transfer_work_t *work);
+    b8 submit(gpu_transfer_work_t *work, VkSemaphore wait_for_semaphore);
+
+    void send_buffer_cmd(gpu_transfer_work_t *work, const gpu_transfer_work_t::cmd_t *cmd);
+    void send_image_cmd(gpu_transfer_work_t *work, const gpu_transfer_work_t::cmd_t *cmd);
+    void read_attachment_cmd(gpu_transfer_work_t *work, const gpu_transfer_work_t::cmd_t *cmd);
+
+
+    inline c8 *memory_pointer(const gpu_transfer_work_t *work)
+    {
+        return work->src_memory + work->used_memory;
+    }
+
+
+    inline u32 memory_offset(const gpu_transfer_work_t *work)
+    {
+        return work->used_memory;
+    }
+}
+
+
+// ==================================================
 // resource variables
 // ==================================================
 namespace resource
@@ -344,4 +450,5 @@ namespace resource
     inline memory::resource_pool_id16_t meshes = {};
     inline descriptor_set_layout_t descriptor_set_layouts = {};
     inline pipeline_layout_t pipeline_layouts = {};
+    inline gpu_transfer_work_t gpu_transfer_works[gpu_transfer_work_count] = {};
 }

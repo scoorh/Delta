@@ -163,6 +163,7 @@ static void get_functions()
     vulkan::vkAllocateDescriptorSets = get_vulkan_device_function(vkAllocateDescriptorSets);
     vulkan::vkUpdateDescriptorSets = get_vulkan_device_function(vkUpdateDescriptorSets);
 
+    vulkan::vkGetFenceStatus = get_vulkan_device_function(vkGetFenceStatus);
     vulkan::vkWaitForFences = get_vulkan_device_function(vkWaitForFences);
     vulkan::vkResetFences = get_vulkan_device_function(vkResetFences);
     vulkan::vkAcquireNextImageKHR = get_vulkan_device_function(vkAcquireNextImageKHR);
