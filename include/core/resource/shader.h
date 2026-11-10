@@ -39,6 +39,9 @@ namespace resource
                     } ndc_scale;
                 };
             };
+
+            math::vector4_t global_light_direction;
+            math::vector4_t camera_position;
         };
 
         static_assert(sizeof(frame_uniform_t) % 16 == 0);

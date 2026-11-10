@@ -29,11 +29,12 @@ namespace math::matrix4x4
     }
 
 
-    void scaling(matrix4x4_t *o, const f32 x, const f32 y, const f32 z)
+    void scaling(matrix4x4_t *o, const f32 uniform_s)
     {
-        o->_00 = x;
-        o->_11 = y;
-        o->_22 = z;
+        assert(uniform_s > 0.0f);
+        o->_00 = uniform_s;
+        o->_11 = uniform_s;
+        o->_22 = uniform_s;
     }
 
 
@@ -63,9 +64,20 @@ namespace math::matrix4x4
     }
 
 
-    void world_transform(matrix4x4_t *o, const f32 tx, const f32 ty, const f32 tz, const f32 sx, const f32 sy, const f32 sz, const quaternion_t *q)
+    void world_transform(matrix4x4_t *o, const f32 tx, const f32 ty, const f32 tz, const f32 uniform_s, const quaternion_t *q)
     {
+        assert(uniform_s > 0.0f);
         rotation(o, q);
+        o->columns[0].x *= uniform_s;
+        o->columns[0].y *= uniform_s;
+        o->columns[0].z *= uniform_s;
+        o->columns[1].x *= uniform_s;
+        o->columns[1].y *= uniform_s;
+        o->columns[1].z *= uniform_s;
+        o->columns[2].x *= uniform_s;
+        o->columns[2].y *= uniform_s;
+        o->columns[2].z *= uniform_s;
+        /*
         o->columns[0].x *= sx;
         o->columns[0].y *= sx;
         o->columns[0].z *= sx;
@@ -75,6 +87,7 @@ namespace math::matrix4x4
         o->columns[2].x *= sz;
         o->columns[2].y *= sz;
         o->columns[2].z *= sz;
+        */
         o->columns[3].x = tx;
         o->columns[3].y = ty;
         o->columns[3].z = tz;

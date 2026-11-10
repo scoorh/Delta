@@ -1,18 +1,19 @@
 #include <core/types.h>
 
+//TODO:  remove
 #include "game/metadata.h"
 
 
-static void wait_for_fence(renderer::frame_t* frame);
-static void reset_fence(renderer::frame_t* frame);
-static void reset_commands(renderer::frame_t* frame);
-static b8 acquire_swapchain_image(renderer::frame_t* frame);
-static void present_swapchain_image(renderer::frame_t* frame);
-static void begin_draw_to_swapchain_commands(renderer::frame_t* frame);
-static void submit_draw_to_swapchain_commands(renderer::frame_t* frame);
-static void transfer_frame_data(renderer::frame_t* frame);
-static void transfer_frame_uniform(renderer::frame_t* frame);
-static void submit_compute_commands(renderer::frame_t* frame);
+static void wait_for_fence(renderer::frame_t *frame);
+static void reset_fence(renderer::frame_t *frame);
+static void reset_commands(renderer::frame_t *frame);
+static b8 acquire_swapchain_image(renderer::frame_t *frame);
+static void present_swapchain_image(renderer::frame_t *frame);
+static void begin_draw_to_swapchain_commands(renderer::frame_t *frame);
+static void submit_draw_to_swapchain_commands(renderer::frame_t *frame);
+static void transfer_frame_data(renderer::frame_t *frame);
+static void transfer_frame_uniform(renderer::frame_t *frame);
+static void submit_compute_commands(renderer::frame_t *frame);
 
 
 namespace renderer
@@ -56,18 +57,25 @@ namespace renderer
 }
 
 
-static void transfer_frame_uniform(renderer::frame_t* frame)
+static void transfer_frame_uniform(renderer::frame_t *frame)
 {
     const auto gpu_transfer_work = frame->gpu_transfer_work;
 
+
+    math::vector4_t global_light_direction = {-0.57735f, -0.57735f, -0.57735f, 0.0f};
     math::quaternion_t camera_rotation;
-    math::vector4_t camera_position = {15.0f, 20.0f, 15.0f, 0.0f};
-    math::quaternion::from_euler(&camera_rotation, math::degree_to_radian(-39.23f), math::degree_to_radian(45.0f), 0.0f);
+    math::vector4_t camera_position = {0.0f, 4.0f, 2.0f, 0.0f};
+    math::quaternion::from_euler(&camera_rotation, 0, 0, 0);
+    //math::vector4_t camera_position = {15.0f, 20.0f, 15.0f, 0.0f};
+    //math::quaternion::from_euler(&camera_rotation, math::degree_to_radian(-39.23f), math::degree_to_radian(45.0f), 0.0f);
 
 
     const auto frame_data_uniform = resource::gpu_transfer_work::memory_pointer<resource::shader::frame_uniform_t>(gpu_transfer_work);
     const auto frame_data_uniform_src_offset = resource::gpu_transfer_work::memory_offset(gpu_transfer_work);
 
+
+    frame_data_uniform->global_light_direction = global_light_direction;
+    frame_data_uniform->camera_position = camera_position;
     frame_data_uniform->viewport_size.width = (f32) renderer::window_width;
     frame_data_uniform->viewport_size.height = (f32) renderer::window_height;
     frame_data_uniform->ndc_scale.width = 2.0f / (f32) renderer::window_width;
@@ -90,16 +98,13 @@ static void transfer_frame_uniform(renderer::frame_t* frame)
     resource::gpu_transfer_work::send_buffer_cmd(gpu_transfer_work, &transfer_cmd);
 
 
-
-
-
     const auto mesh_instance = resource::gpu_transfer_work::memory_pointer<resource::shader::mesh_instance_t>(gpu_transfer_work);
     const auto mesh_instance_src_offset = resource::gpu_transfer_work::memory_offset(gpu_transfer_work);
     const u32 mesh_instance_count = 1;
 
     math::matrix4x4_t m;
     math::quaternion_t q = {1.0f, 0.0f, 0.0f, 0.0f};
-    math::matrix4x4::world_transform(&m, 0.0f, 0.0f, 0.0f, 0.5f, 0.5f, 0.5f, &q);
+    math::matrix4x4::world_transform(&m, 0.0f, 0.0f, 0.0f, 0.5f, &q);
 
     mesh_instance[0].packed0.x = m.columns[0].x;
     mesh_instance[0].packed0.y = m.columns[1].x;
@@ -150,7 +155,6 @@ static void transfer_frame_uniform(renderer::frame_t* frame)
     resource::gpu_transfer_work::send_buffer_cmd(gpu_transfer_work, &transfer_cmd);
 
 
-
     const auto mesh_indirect_draw_cmd_data = resource::gpu_transfer_work::memory_pointer<resource::shader::mesh_indirect_draw_cmd_data_t>(gpu_transfer_work);
     const auto mesh_indirect_draw_cmd_data_src_offset = resource::gpu_transfer_work::memory_offset(gpu_transfer_work);
     const u32 mesh_indirect_draw_cmd_data_count = 1;
@@ -167,7 +171,7 @@ static void transfer_frame_uniform(renderer::frame_t* frame)
 }
 
 
-static void transfer_frame_data(renderer::frame_t* frame)
+static void transfer_frame_data(renderer::frame_t *frame)
 {
     const auto gpu_transfer_work = frame->gpu_transfer_work;
 
@@ -177,7 +181,7 @@ static void transfer_frame_data(renderer::frame_t* frame)
 }
 
 
-static void submit_compute_commands(renderer::frame_t* frame)
+static void submit_compute_commands(renderer::frame_t *frame)
 {
     const auto cmd = frame->compute_cmd_buffer;
 
@@ -190,7 +194,6 @@ static void submit_compute_commands(renderer::frame_t* frame)
     {
         logger::critical_error(logger::code::vkBeginCommandBuffer_compute, result);
     }
-
 
 
     resource::pipeline_layout::cull_mesh::push_constant_t cull_mesh_push_constant = {};
@@ -276,7 +279,7 @@ static void submit_compute_commands(renderer::frame_t* frame)
 }
 
 
-static void begin_draw_to_swapchain_commands(renderer::frame_t* frame)
+static void begin_draw_to_swapchain_commands(renderer::frame_t *frame)
 {
     const auto cmd = frame->draw_to_swapchain_cmd_buffer;
 
@@ -397,8 +400,6 @@ static void begin_draw_to_swapchain_commands(renderer::frame_t* frame)
     vulkan::vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 
-
-
     auto pipeline = resource::pipeline::find(metadata::resource_package::default_draw_mesh_pipeline_id);
     vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
     vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, resource::pipeline_layout::draw_mesh::descriptor_count, frame->descriptor_set.draw_mesh_array, 0, nullptr);
@@ -410,7 +411,7 @@ static void begin_draw_to_swapchain_commands(renderer::frame_t* frame)
 }
 
 
-static void submit_draw_to_swapchain_commands(renderer::frame_t* frame)
+static void submit_draw_to_swapchain_commands(renderer::frame_t *frame)
 {
     const auto cmd = frame->draw_to_swapchain_cmd_buffer;
 
@@ -502,7 +503,7 @@ static void submit_draw_to_swapchain_commands(renderer::frame_t* frame)
 }
 
 
-static b8 acquire_swapchain_image(renderer::frame_t* frame)
+static b8 acquire_swapchain_image(renderer::frame_t *frame)
 {
     const auto result = vulkan::vkAcquireNextImageKHR(renderer::device, renderer::swapchain, 0, frame->acquired_swapchain_image, nullptr, &frame->acquired_swapchain_image_idx);
 
@@ -522,7 +523,7 @@ static b8 acquire_swapchain_image(renderer::frame_t* frame)
 }
 
 
-static void present_swapchain_image(renderer::frame_t* frame)
+static void present_swapchain_image(renderer::frame_t *frame)
 {
     VkPresentInfoKHR present_info = {};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -545,13 +546,13 @@ static void present_swapchain_image(renderer::frame_t* frame)
 }
 
 
-static void reset_commands(renderer::frame_t* frame)
+static void reset_commands(renderer::frame_t *frame)
 {
     vulkan::vkResetCommandPool(renderer::device, frame->default_command_pool, 0);
 }
 
 
-static void wait_for_fence(renderer::frame_t* frame)
+static void wait_for_fence(renderer::frame_t *frame)
 {
     VkResult result;
 
@@ -563,7 +564,7 @@ static void wait_for_fence(renderer::frame_t* frame)
 }
 
 
-static void reset_fence(renderer::frame_t* frame)
+static void reset_fence(renderer::frame_t *frame)
 {
     VkResult result;
 

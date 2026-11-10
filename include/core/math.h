@@ -126,9 +126,9 @@ namespace math::matrix4x4
     void identity(matrix4x4_t* o);
 
     void translation(matrix4x4_t *o, f32 x, f32 y, f32 z);
-    void scaling(matrix4x4_t *o, f32 x, f32 y, f32 z);
+    void scaling(matrix4x4_t *o, f32 uniform_s);
     void rotation(matrix4x4_t *o, const quaternion_t *q);
-    void world_transform(matrix4x4_t *o, f32 tx, f32 ty, f32 tz, f32 sx, f32 sy, f32 sz, const quaternion_t *q);
+    void world_transform(matrix4x4_t *o, f32 tx, f32 ty, f32 tz, f32 uniform_s, const quaternion_t *q);
 
     void perspective(matrix4x4_t *o, f32 aspect_ratio, f32 field_of_view, f32 near_z, f32 far_z);
 
