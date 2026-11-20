@@ -104,17 +104,18 @@ struct mesh_instance_t { \
     vec4 packed2; \
     uint packed3; \
     uint packed4; \
-    uint _pad1; \
+    uint packed5; \
     uint _pad2; \
 }; \
 layout(set = _set_, binding = _binding_) buffer _access_ mesh_instance_ssbo_t { \
     mesh_instance_t array[]; \
 } _mesh_instance_ssbo;
 
-#define vertex_position_ssbo_idx(instance_idx) (_mesh_instance_ssbo.array[instance_idx].packed3 & 0xffffu)
+#define vertex_position_ssbo_idx(instance_idx) (_mesh_instance_ssbo.array[instance_idx].packed3 & 0x0000ffffu)
 #define vertex_attribute_ssbo_idx(instance_idx) ((_mesh_instance_ssbo.array[instance_idx].packed3 & 0xffff0000u) >> 16)
-#define material_idx(instance_idx) (_mesh_instance_ssbo.array[instance_idx].packed4 & 0xffffu)
+#define material_idx(instance_idx) (_mesh_instance_ssbo.array[instance_idx].packed4 & 0x0000ffffu)
 #define interaction_id(instance_idx) ((_mesh_instance_ssbo.array[instance_idx].packed4 & 0xffff0000u) >> 16)
+#define outline_pixel_size(instance_idx) (_mesh_instance_ssbo.array[instance_idx].packed5 & 0x000000ffu)
 
 #define world_position(instance_idx, position) \
     vec3(dot(_mesh_instance_ssbo.array[instance_idx].packed0, position), \

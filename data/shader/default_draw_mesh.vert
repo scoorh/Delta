@@ -2,7 +2,7 @@
 
 #define frame_data_descriptor
 #define mesh_data_descriptor
-#include "default_types.glsl"
+#include "core/types.glsl"
 
 frame_uniform(0, 0, readonly)
 mesh_vertex_ssbo_array(1, 0, readonly)

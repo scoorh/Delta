@@ -2,7 +2,7 @@
 
 #define frame_data_descriptor
 #define ui_data_descriptor
-#include "default_types.glsl"
+#include "core/types.glsl"
 
 frame_uniform(0, 0, readonly)
 ui_instance_ssbo(1, 0, readonly)

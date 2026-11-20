@@ -62,13 +62,21 @@ static void transfer_frame_uniform(renderer::frame_t *frame)
     const auto gpu_transfer_work = frame->gpu_transfer_work;
 
 
-    math::vector4_t global_light_direction = {-0.57735f, -0.57735f, -0.57735f, 0.0f};
+    math::vector4_t global_light_direction = {-0.57735f, -0.57735f, 0.57735f, 0.0f};
     math::quaternion_t camera_rotation;
     math::vector4_t camera_position = {0.0f, 4.0f, 2.0f, 0.0f};
     math::quaternion::from_euler(&camera_rotation, 0, 0, 0);
     //math::vector4_t camera_position = {15.0f, 20.0f, 15.0f, 0.0f};
     //math::quaternion::from_euler(&camera_rotation, math::degree_to_radian(-39.23f), math::degree_to_radian(45.0f), 0.0f);
+    static float x = 1.0f;
+    static float mm = -1;
 
+    if (x > 2.0f)
+        mm *= -1;
+    if (x < 1.0f)
+        mm *= -1;
+    x += 0.01f * mm;
+    camera_position.z += x;
 
     const auto frame_data_uniform = resource::gpu_transfer_work::memory_pointer<resource::shader::frame_uniform_t>(gpu_transfer_work);
     const auto frame_data_uniform_src_offset = resource::gpu_transfer_work::memory_offset(gpu_transfer_work);
@@ -124,6 +132,7 @@ static void transfer_frame_uniform(renderer::frame_t *frame)
     mesh_instance[0].attribute_vertex_ssbo_idx = mesh->attribute_vertex_ssbo_idx;
     mesh_instance[0].material_idx = 0;
     mesh_instance[0].interaction_id = 0;
+    mesh_instance[0].outline_pixel_size = 1;
 
 
     transfer_cmd.buffer.dst = frame->data_buffer;
@@ -400,11 +409,21 @@ static void begin_draw_to_swapchain_commands(renderer::frame_t *frame)
     vulkan::vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 
-    auto pipeline = resource::pipeline::find(metadata::resource_package::default_draw_mesh_pipeline_id);
+    auto pipeline = resource::pipeline::find(metadata::resource_package::mesh_outline_pipeline_id);
     vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
     vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, resource::pipeline_layout::draw_mesh::descriptor_count, frame->descriptor_set.draw_mesh_array, 0, nullptr);
 
     auto mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
+    vulkan::vkCmdBindIndexBuffer(cmd, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT16);
+
+    vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 1, sizeof(resource::shader::mesh_indirect_draw_cmd_t));
+
+
+    pipeline = resource::pipeline::find(metadata::resource_package::default_draw_mesh_pipeline_id);
+    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
+    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, resource::pipeline_layout::draw_mesh::descriptor_count, frame->descriptor_set.draw_mesh_array, 0, nullptr);
+
+    mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
     vulkan::vkCmdBindIndexBuffer(cmd, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
     vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 1, sizeof(resource::shader::mesh_indirect_draw_cmd_t));

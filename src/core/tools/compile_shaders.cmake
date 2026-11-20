@@ -3,6 +3,13 @@ file(GLOB_RECURSE SHADER_FILES
         "${SOURCE_DIR}/*.vert"
         "${SOURCE_DIR}/*.frag"
 )
+file(GLOB_RECURSE NESTED_SHADER_FILES
+        "${SOURCE_DIR}/*/*.comp"
+        "${SOURCE_DIR}/*/*.vert"
+        "${SOURCE_DIR}/*/*.frag"
+)
+
+list(APPEND SHADER_FILES ${NESTED_SHADER_FILES})
 
 file(MAKE_DIRECTORY "${DEST_DIR}")
 

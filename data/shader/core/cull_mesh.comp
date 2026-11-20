@@ -2,7 +2,7 @@
 
 #define frame_data_descriptor
 #define cull_mesh_data_descriptor
-#include "default_types.glsl"
+#include "types.glsl"
 
 frame_uniform(0, 0, readonly)
 mesh_instance_index_ssbo(1, 0, writeonly)

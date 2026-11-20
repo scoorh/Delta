@@ -1,6 +1,6 @@
 #version 450
 
-#include "default_types.glsl"
+#include "core/types.glsl"
 
 layout(location = 0) in flat uint in_material_idx;
 layout(location = 1) in flat uint in_interaction_id;

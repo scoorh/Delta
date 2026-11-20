@@ -1,8 +1,8 @@
 #version 450
 
-#define mesh_data_descriptor
 #define frame_data_descriptor
-#include "default_types.glsl"
+#define mesh_data_descriptor
+#include "core/types.glsl"
 
 frame_uniform(0, 0, readonly)
 material_ssbo(1, 3, readonly)
@@ -17,7 +17,7 @@ layout(location = 1) out uint out_interaction_buffer;
 
 void main()
 {
-    vec3 N = normalize(in_world_normal);
+    vec3 N = in_world_normal;
     vec3 L = -(global_light_direction.xyz);
     vec3 V = normalize(camera_position.xyz - in_world_position);
 

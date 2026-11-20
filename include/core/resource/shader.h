@@ -126,8 +126,19 @@ namespace resource
                     u16 interaction_id;
                 };
             };
+            union
+            {
+                u32 packed5;
 
-            u32 _pad2;
+                struct
+                {
+                    u8 outline_pixel_size;
+                    u8 _pad01;
+                    u8 _pad02;
+                    u8 _pad03;
+                };
+            };
+
             u32 _pad3;
         };
 

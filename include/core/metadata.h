@@ -6,6 +6,9 @@
 // ==================================================
 namespace metadata::resource_package
 {
+    // ==================================================
+    // resource package file header
+    // ==================================================
     constexpr u32 buffer_setup_size = 12;
     constexpr u32 mesh_setup_size = 20;
     constexpr u32 image_setup_size = 20;
@@ -15,10 +18,16 @@ namespace metadata::resource_package
     constexpr u32 pipeline_setup_size = 28;
     constexpr u32 package_header_size = 44;
 
+    // ==================================================
+    // pipeline layout
+    // ==================================================
     constexpr u32 pipeline_layout_cull_mesh = 1;
     constexpr u32 pipeline_layout_draw_mesh = 2;
     constexpr u32 pipeline_layout_draw_ui = 0;
 
+    // ==================================================
+    // image sampler
+    // ==================================================
     constexpr u32 filter_nearest = 0;
     constexpr u32 filter_linear = 1;
     constexpr u32 address_mode_repeat = 0;
@@ -29,6 +38,9 @@ namespace metadata::resource_package
     constexpr u32 mipmap_mode_nearest = 0;
     constexpr u32 mipmap_mode_linear = 1;
 
+    // ==================================================
+    // pipeline
+    // ==================================================
     constexpr u32 polygon_mode_fill = 0;
     constexpr u32 polygon_mode_line = 1;
     constexpr u32 polygon_mode_point = 2;
@@ -44,6 +56,9 @@ namespace metadata::resource_package
     constexpr u32 primitive_topology_triangle_strip = 4;
     constexpr u32 primitive_topology_triangle_fan = 5;
 
+    // ==================================================
+    // buffer
+    // ==================================================
     constexpr u32 usage_index_buffer = 66;
     constexpr u32 usage_vertex_storage_buffer = 34;
 }
