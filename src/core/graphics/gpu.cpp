@@ -3,7 +3,7 @@
 
 
 static void pick_device();
-static void create_swapchain_handle();
+static void create_device_handle();
 static void get_functions();
 static void get_queues();
 static void create_mutex();
@@ -14,7 +14,7 @@ namespace renderer
     void initialize_device()
     {
         pick_device();
-        create_swapchain_handle();
+        create_device_handle();
         get_functions();
         get_queues();
         create_mutex();
@@ -61,7 +61,7 @@ static void pick_device()
 }
 
 
-static void create_swapchain_handle()
+static void create_device_handle()
 {
     u32 layer_count = 0;
     u32 extension_count = 1;
@@ -87,6 +87,7 @@ static void create_swapchain_handle()
 
     features2.features.samplerAnisotropy = VK_TRUE;
     features2.features.independentBlend = VK_TRUE;
+    features2.features.multiDrawIndirect = VK_TRUE;
     features12.bufferDeviceAddress = VK_TRUE;
     features12.runtimeDescriptorArray = VK_TRUE;
     features12.descriptorBindingPartiallyBound = VK_TRUE;

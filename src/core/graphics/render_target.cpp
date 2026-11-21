@@ -103,6 +103,7 @@ static void create_other_attachments()
     image_setup.width = renderer::window_width;
     image_setup.height = renderer::window_height;
 
+
     image_setup.id = resource::interaction_buffer_image_id;
     image_setup.format = gpu_info::format->interaction_buffer;
     image_setup.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -116,9 +117,10 @@ static void create_other_attachments()
     renderer::interaction_buffer_image = image->handle;
     renderer::interaction_buffer_image_view = image->view;
 
+
     image_setup.id = resource::depth_buffer_image_id;
     image_setup.format = gpu_info::format->depth_buffer;
-    image_setup.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    image_setup.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     image_setup.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
 
     image = resource::image::create(&image_setup);
@@ -128,4 +130,18 @@ static void create_other_attachments()
     }
     renderer::depth_buffer_image = image->handle;
     renderer::depth_buffer_image_view = image->view;
+
+
+    image_setup.id = resource::normal_buffer_image_id;
+    image_setup.format = gpu_info::format->normal_buffer;
+    image_setup.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    image_setup.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+
+    image = resource::image::create(&image_setup);
+    if (nullptr == image)
+    {
+        logger::critical_error(logger::code::create_normal_buffer, 0);
+    }
+    renderer::normal_buffer_image = image->handle;
+    renderer::normal_buffer_image_view = image->view;
 }

@@ -97,7 +97,7 @@ namespace resource::gpu_transfer_work
     }
 
 
-    b8 submit(gpu_transfer_work_t *work, VkSemaphore wait_for_semaphore)
+    b8 submit(gpu_transfer_work_t *work, VkSemaphore wait_for_semaphore, b8 signal_semaphore)
     {
         const auto cmd = work->transfer_cmd_buffer;
 
@@ -129,8 +129,8 @@ namespace resource::gpu_transfer_work
         submit_info.pWaitSemaphoreInfos = wait_for_semaphore ? &wait_semaphore_info : nullptr;
         submit_info.commandBufferInfoCount = 1;
         submit_info.pCommandBufferInfos = &cmd_buffer_submit_info;
-        submit_info.signalSemaphoreInfoCount = 1;
-        submit_info.pSignalSemaphoreInfos = &signal_semaphore_info;
+        submit_info.signalSemaphoreInfoCount = signal_semaphore ? 1 : 0;
+        submit_info.pSignalSemaphoreInfos = signal_semaphore ? &signal_semaphore_info : nullptr;
 
         vulkan::vkResetFences(renderer::device, 1, &work->all_completed);
 

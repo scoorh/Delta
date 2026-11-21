@@ -34,11 +34,13 @@ namespace gpu_info
     {
         VkFormat depth_buffer;
         VkFormat interaction_buffer;
+        VkFormat normal_buffer;
 
         VkFormatProperties D32_SFLOAT;
         VkFormatProperties D32_SFLOAT_S8_UINT;
         VkFormatProperties D24_UNORM_S8_UINT;
         VkFormatProperties R32_UINT;
+        VkFormatProperties R16G16_SNORM;
     };
 
 
@@ -56,6 +58,7 @@ namespace gpu_info
         b8 descriptor_indexing;
         b8 sampler_anisotropy;
         b8 independent_blend;
+        b8 multi_draw_indirect;
     };
 
 

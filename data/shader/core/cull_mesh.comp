@@ -30,7 +30,7 @@ void main()
 
    for (uint i = 0; i < initial_instance_count; ++i)
    {
-       draw_instance_index(first_instance_index + final_instance_count) = i;
+       draw_instance_index(first_instance_index + final_instance_count) = first_instance_index + i;
        ++final_instance_count;
    }
 

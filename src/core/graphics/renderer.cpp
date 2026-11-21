@@ -68,15 +68,6 @@ static void transfer_frame_uniform(renderer::frame_t *frame)
     math::quaternion::from_euler(&camera_rotation, 0, 0, 0);
     //math::vector4_t camera_position = {15.0f, 20.0f, 15.0f, 0.0f};
     //math::quaternion::from_euler(&camera_rotation, math::degree_to_radian(-39.23f), math::degree_to_radian(45.0f), 0.0f);
-    static float x = 1.0f;
-    static float mm = -1;
-
-    if (x > 2.0f)
-        mm *= -1;
-    if (x < 1.0f)
-        mm *= -1;
-    x += 0.01f * mm;
-    camera_position.z += x;
 
     const auto frame_data_uniform = resource::gpu_transfer_work::memory_pointer<resource::shader::frame_uniform_t>(gpu_transfer_work);
     const auto frame_data_uniform_src_offset = resource::gpu_transfer_work::memory_offset(gpu_transfer_work);
@@ -108,11 +99,19 @@ static void transfer_frame_uniform(renderer::frame_t *frame)
 
     const auto mesh_instance = resource::gpu_transfer_work::memory_pointer<resource::shader::mesh_instance_t>(gpu_transfer_work);
     const auto mesh_instance_src_offset = resource::gpu_transfer_work::memory_offset(gpu_transfer_work);
-    const u32 mesh_instance_count = 1;
+    const u32 mesh_instance_count = 3;
 
     math::matrix4x4_t m;
     math::quaternion_t q = {1.0f, 0.0f, 0.0f, 0.0f};
+
+    static float rr = 0.0f;
+    rr += 0.005f;
+    math::quaternion::from_euler(&q, 0.0f, rr, 0.0f);
+
+
     math::matrix4x4::world_transform(&m, 0.0f, 0.0f, 0.0f, 0.5f, &q);
+
+
 
     mesh_instance[0].packed0.x = m.columns[0].x;
     mesh_instance[0].packed0.y = m.columns[1].x;
@@ -127,12 +126,33 @@ static void transfer_frame_uniform(renderer::frame_t *frame)
     mesh_instance[0].packed2.z = m.columns[2].z;
     mesh_instance[0].packed2.w = m.columns[3].z;
 
-    auto mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
-    mesh_instance[0].position_vertex_ssbo_idx = mesh->position_vertex_ssbo_idx;
-    mesh_instance[0].attribute_vertex_ssbo_idx = mesh->attribute_vertex_ssbo_idx;
+    auto body_mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
+    auto hair_mesh = resource::mesh::find(metadata::resource_package::hair_mesh_id);
+    auto clothes_mesh = resource::mesh::find(metadata::resource_package::clothes_mesh_id);
+
+    mesh_instance[0].position_vertex_ssbo_idx = body_mesh->position_vertex_ssbo_idx;
+    mesh_instance[0].attribute_vertex_ssbo_idx = body_mesh->attribute_vertex_ssbo_idx;
     mesh_instance[0].material_idx = 0;
     mesh_instance[0].interaction_id = 0;
     mesh_instance[0].outline_pixel_size = 1;
+
+    mesh_instance[1] = mesh_instance[0];
+    mesh_instance[2] = mesh_instance[0];
+
+
+    math::matrix4x4::world_transform(&m, 0.0f, 8.1184f / 2.0f, -0.023793f / 2.0f, 0.5f, &q);
+    mesh_instance[1].packed0.x = m.columns[0].x;
+    mesh_instance[1].packed0.y = m.columns[1].x;
+    mesh_instance[1].packed0.z = m.columns[2].x;
+    mesh_instance[1].packed0.w = m.columns[3].x;
+    mesh_instance[1].packed1.x = m.columns[0].y;
+    mesh_instance[1].packed1.y = m.columns[1].y;
+    mesh_instance[1].packed1.z = m.columns[2].y;
+    mesh_instance[1].packed1.w = m.columns[3].y;
+    mesh_instance[1].packed2.x = m.columns[0].z;
+    mesh_instance[1].packed2.y = m.columns[1].z;
+    mesh_instance[1].packed2.z = m.columns[2].z;
+    mesh_instance[1].packed2.w = m.columns[3].z;
 
 
     transfer_cmd.buffer.dst = frame->data_buffer;
@@ -146,13 +166,23 @@ static void transfer_frame_uniform(renderer::frame_t *frame)
 
     const auto mesh_indirect_draw_cmd = resource::gpu_transfer_work::memory_pointer<resource::shader::mesh_indirect_draw_cmd_t>(gpu_transfer_work);
     const auto mesh_indirect_draw_cmd_src_offset = resource::gpu_transfer_work::memory_offset(gpu_transfer_work);
-    const u32 mesh_indirect_draw_cmd_count = 1;
+    const u32 mesh_indirect_draw_cmd_count = 3;
 
 
-    mesh_indirect_draw_cmd[0].index_count = mesh->index_count;
-    mesh_indirect_draw_cmd[0].first_index = mesh->first_index;
-    mesh_indirect_draw_cmd[0].vertex_offset = mesh->first_vertex;
+    mesh_indirect_draw_cmd[0].index_count = body_mesh->index_count;
+    mesh_indirect_draw_cmd[0].first_index = body_mesh->first_index;
+    mesh_indirect_draw_cmd[0].vertex_offset = body_mesh->first_vertex;
     mesh_indirect_draw_cmd[0].first_instance = 0;
+
+    mesh_indirect_draw_cmd[1].index_count = hair_mesh->index_count;
+    mesh_indirect_draw_cmd[1].first_index = hair_mesh->first_index;
+    mesh_indirect_draw_cmd[1].vertex_offset = hair_mesh->first_vertex;
+    mesh_indirect_draw_cmd[1].first_instance = 1;
+
+    mesh_indirect_draw_cmd[2].index_count = clothes_mesh->index_count;
+    mesh_indirect_draw_cmd[2].first_index = clothes_mesh->first_index;
+    mesh_indirect_draw_cmd[2].vertex_offset = clothes_mesh->first_vertex;
+    mesh_indirect_draw_cmd[2].first_instance = 2;
 
 
     transfer_cmd.buffer.dst = frame->data_buffer;
@@ -166,9 +196,11 @@ static void transfer_frame_uniform(renderer::frame_t *frame)
 
     const auto mesh_indirect_draw_cmd_data = resource::gpu_transfer_work::memory_pointer<resource::shader::mesh_indirect_draw_cmd_data_t>(gpu_transfer_work);
     const auto mesh_indirect_draw_cmd_data_src_offset = resource::gpu_transfer_work::memory_offset(gpu_transfer_work);
-    const u32 mesh_indirect_draw_cmd_data_count = 1;
+    const u32 mesh_indirect_draw_cmd_data_count = 3;
 
     mesh_indirect_draw_cmd_data[0].initial_instance_count = 1;
+    mesh_indirect_draw_cmd_data[1].initial_instance_count = 1;
+    mesh_indirect_draw_cmd_data[2].initial_instance_count = 1;
 
     transfer_cmd.buffer.dst = frame->data_buffer;
     transfer_cmd.buffer.dst_offset = frame->data_offset.mesh_indirect_draw_cmds_data;
@@ -186,7 +218,7 @@ static void transfer_frame_data(renderer::frame_t *frame)
 
     resource::gpu_transfer_work::begin(gpu_transfer_work);
     transfer_frame_uniform(frame);
-    resource::gpu_transfer_work::submit(gpu_transfer_work, nullptr);
+    resource::gpu_transfer_work::submit(gpu_transfer_work, nullptr, true);
 }
 
 
@@ -206,8 +238,8 @@ static void submit_compute_commands(renderer::frame_t *frame)
 
 
     resource::pipeline_layout::cull_mesh::push_constant_t cull_mesh_push_constant = {};
-    cull_mesh_push_constant.instance_count = 1;
-    cull_mesh_push_constant.indirect_draw_cmd_count = 1;
+    cull_mesh_push_constant.instance_count = 3;
+    cull_mesh_push_constant.indirect_draw_cmd_count = 3;
 
     vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, frame->cull_mesh_pipeline);
     vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, frame->cull_mesh_pipeline_layout, 0, resource::pipeline_layout::cull_mesh::descriptor_count, frame->descriptor_set.cull_mesh_array, 0, nullptr);
@@ -303,7 +335,7 @@ static void begin_draw_to_swapchain_commands(renderer::frame_t *frame)
     }
 
 
-    constexpr u32 attachment_image_barrier_count = 3;
+    constexpr u32 attachment_image_barrier_count = 4;
     VkImageMemoryBarrier2 attachment_image_barriers[attachment_image_barrier_count] = {};
     VkDependencyInfo barrier_dependency_info = {};
 
@@ -339,11 +371,25 @@ static void begin_draw_to_swapchain_commands(renderer::frame_t *frame)
     attachment_image_barriers[2].subresourceRange.levelCount = 1;
     attachment_image_barriers[2].subresourceRange.layerCount = 1;
 
+    attachment_image_barriers[3].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+    attachment_image_barriers[3].srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    attachment_image_barriers[3].srcAccessMask = 0;
+    attachment_image_barriers[3].dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    attachment_image_barriers[3].dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+    attachment_image_barriers[3].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachment_image_barriers[3].newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    attachment_image_barriers[3].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    attachment_image_barriers[3].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    attachment_image_barriers[3].image = renderer::normal_buffer_image;
+    attachment_image_barriers[3].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    attachment_image_barriers[3].subresourceRange.levelCount = 1;
+    attachment_image_barriers[3].subresourceRange.layerCount = 1;
+
     attachment_image_barriers[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    attachment_image_barriers[1].srcStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
-    attachment_image_barriers[1].srcAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    attachment_image_barriers[1].dstStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
-    attachment_image_barriers[1].dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    attachment_image_barriers[1].srcStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+    attachment_image_barriers[1].srcAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+    attachment_image_barriers[1].dstStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+    attachment_image_barriers[1].dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
     attachment_image_barriers[1].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     attachment_image_barriers[1].newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
     attachment_image_barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -356,7 +402,7 @@ static void begin_draw_to_swapchain_commands(renderer::frame_t *frame)
     vulkan::vkCmdPipelineBarrier2(cmd, &barrier_dependency_info);
 
 
-    constexpr u32 color_attachment_count = 2;
+    constexpr u32 color_attachment_count = 3;
     VkRenderingAttachmentInfo color_attachment_info[color_attachment_count] = {};
     VkRenderingAttachmentInfo depth_attachment_info = {};
 
@@ -377,11 +423,21 @@ static void begin_draw_to_swapchain_commands(renderer::frame_t *frame)
     color_attachment_info[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     color_attachment_info[1].clearValue.color.uint32[0] = 0xffffffff;
 
+    color_attachment_info[2].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    color_attachment_info[2].imageView = renderer::normal_buffer_image_view;
+    color_attachment_info[2].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    color_attachment_info[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment_info[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment_info[2].clearValue.color.float32[0] = 0.0f;
+    color_attachment_info[2].clearValue.color.float32[1] = 0.0f;
+    color_attachment_info[2].clearValue.color.float32[2] = 0.0f;
+    color_attachment_info[2].clearValue.color.float32[3] = 0.0f;
+
     depth_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     depth_attachment_info.imageView = renderer::depth_buffer_image_view;
     depth_attachment_info.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
     depth_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     depth_attachment_info.clearValue.depthStencil.depth = 1.0f;
 
     VkRenderingInfo rendering_info = {};
@@ -416,17 +472,17 @@ static void begin_draw_to_swapchain_commands(renderer::frame_t *frame)
     auto mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
     vulkan::vkCmdBindIndexBuffer(cmd, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
-    vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 1, sizeof(resource::shader::mesh_indirect_draw_cmd_t));
+    vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 3, sizeof(resource::shader::mesh_indirect_draw_cmd_t));
 
 
-    pipeline = resource::pipeline::find(metadata::resource_package::default_draw_mesh_pipeline_id);
+    pipeline = resource::pipeline::find(metadata::resource_package::draw_character_pipeline_id);
     vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
     vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, resource::pipeline_layout::draw_mesh::descriptor_count, frame->descriptor_set.draw_mesh_array, 0, nullptr);
 
     mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
     vulkan::vkCmdBindIndexBuffer(cmd, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
-    vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 1, sizeof(resource::shader::mesh_indirect_draw_cmd_t));
+    vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 3, sizeof(resource::shader::mesh_indirect_draw_cmd_t));
 }
 
 
@@ -437,7 +493,7 @@ static void submit_draw_to_swapchain_commands(renderer::frame_t *frame)
     vulkan::vkCmdEndRendering(cmd);
 
 
-    constexpr u32 attachment_image_barrier_count = 2;
+    constexpr u32 attachment_image_barrier_count = 4;
     VkImageMemoryBarrier2 attachment_image_barriers[attachment_image_barrier_count] = {};
     VkDependencyInfo barrier_dependency_info = {};
 
@@ -472,6 +528,34 @@ static void submit_draw_to_swapchain_commands(renderer::frame_t *frame)
     attachment_image_barriers[1].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     attachment_image_barriers[1].subresourceRange.levelCount = 1;
     attachment_image_barriers[1].subresourceRange.layerCount = 1;
+
+    attachment_image_barriers[3].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+    attachment_image_barriers[3].srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    attachment_image_barriers[3].srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+    attachment_image_barriers[3].dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+    attachment_image_barriers[3].dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+    attachment_image_barriers[3].oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    attachment_image_barriers[3].newLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+    attachment_image_barriers[3].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    attachment_image_barriers[3].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    attachment_image_barriers[3].image = renderer::normal_buffer_image;
+    attachment_image_barriers[3].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    attachment_image_barriers[3].subresourceRange.levelCount = 1;
+    attachment_image_barriers[3].subresourceRange.layerCount = 1;
+
+    attachment_image_barriers[2].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+    attachment_image_barriers[2].srcStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
+    attachment_image_barriers[2].srcAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    attachment_image_barriers[2].dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+    attachment_image_barriers[2].dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+    attachment_image_barriers[2].oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    attachment_image_barriers[2].newLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+    attachment_image_barriers[2].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    attachment_image_barriers[2].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    attachment_image_barriers[2].image = renderer::depth_buffer_image;
+    attachment_image_barriers[2].subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    attachment_image_barriers[2].subresourceRange.levelCount = 1;
+    attachment_image_barriers[2].subresourceRange.layerCount = 1;
 
     vulkan::vkCmdPipelineBarrier2(cmd, &barrier_dependency_info);
 

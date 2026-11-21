@@ -269,6 +269,9 @@ def process_pipeline_setups(array, output_file):
         layout_idx = get_value(element, "layout_idx", 0, 1)
         depth_test_enabled = 0
         depth_write_enabled = 0
+        write_to_interaction_buffer = 0
+        write_to_color_buffer = 0
+        write_to_normal_buffer = 0
 
         if is_compute == 0:
             primitive_restart_enabled = get_value(element, "primitive_restart_enabled", 0, 0)
@@ -280,6 +283,10 @@ def process_pipeline_setups(array, output_file):
             depth_write_enabled = get_value(element, "depth_write_enabled", 0, 0)
             vertex_shader_id = get_value(element, "vertex_shader_id", 0, 1)
             fragment_shader_id = get_value(element, "fragment_shader_id", 0, 1)
+
+            write_to_interaction_buffer = get_value(element, "write_to_interaction_buffer", 0, 0)
+            write_to_color_buffer = get_value(element, "write_to_color_buffer", 0, 0)
+            write_to_normal_buffer = get_value(element, "write_to_normal_buffer", 0, 0)
         else:
             compute_shader_id = get_value(element, "compute_shader_id", 0, 1)
 
@@ -302,7 +309,10 @@ def process_pipeline_setups(array, output_file):
         output_file.write(struct.pack('<B', depth_test_enabled)) #25
         output_file.write(struct.pack('<B', depth_write_enabled)) #26
         output_file.write(struct.pack('<B', layout_idx)) #27
-        output_file.write(struct.pack('<B', 255)) #28
+        output_file.write(struct.pack('<B', write_to_color_buffer)) #28
+        output_file.write(struct.pack('<B', write_to_interaction_buffer)) #29
+        output_file.write(struct.pack('<B', write_to_normal_buffer)) #30
+        output_file.write(struct.pack('<H', 65535)) #32
 
 
     return

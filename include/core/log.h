@@ -41,6 +41,7 @@ namespace logger
         vkCreateBuffer,
         vkAllocateMemory,
         create_depth_buffer,
+        create_normal_buffer,
         create_interaction_buffer,
         vkCreateGraphicsPipelines,
         vkCreateComputePipelines,

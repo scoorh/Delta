@@ -175,3 +175,21 @@ layout(set = _set_, binding = _binding_) buffer _access_ mesh_indirect_draw_cmd_
 #define draw_vertex_offset(idx) _mesh_indirect_draw_cmd_ssbo.array[idx].vertex_offset
 #define draw_first_instance(idx) _mesh_indirect_draw_cmd_ssbo.array[idx].first_instance
 #endif
+
+
+vec2 encode_octahedral_normal(vec3 normal)
+{
+    normal /= abs(normal.x) + abs(normal.y) + abs(normal.z);
+    vec2 p = normal.xy;
+    vec2 folded = (1.0 - abs(p.yx)) * mix(vec2(-1.0), vec2(1.0), greaterThanEqual(p, vec2(0.0)));
+    return mix(p, folded, float(normal.z < 0.0));
+}
+
+
+vec3 decode_octahedral_normal(vec2 encoded)
+{
+    vec3 n = vec3(encoded, 1.0 - abs(encoded.x) - abs(encoded.y));
+    float t = max(-n.z, 0.0);
+    n.xy += mix(vec2(t), vec2(-t), greaterThanEqual(n.xy, vec2(0.0)));
+    return normalize(n);
+}

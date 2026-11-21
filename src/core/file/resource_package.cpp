@@ -330,7 +330,7 @@ static b8 send_mesh_to_gpu(resource::mesh_t *mesh, const resource::mesh::setup_t
     file::base::read_binary(file, gpu_transfer_work->src_memory + cmd.buffer.src_offset, cmd.buffer.src_size);
 
 
-    if (!resource::gpu_transfer_work::submit(gpu_transfer_work, nullptr))
+    if (!resource::gpu_transfer_work::submit(gpu_transfer_work, nullptr, false))
     {
         goto end;
     }
@@ -382,7 +382,7 @@ static b8 send_materials_to_gpu(resource::material_t **materials, const u32 mate
     }
 
 
-    if (!resource::gpu_transfer_work::submit(gpu_transfer_work, nullptr))
+    if (!resource::gpu_transfer_work::submit(gpu_transfer_work, nullptr, false))
     {
         goto end;
     }

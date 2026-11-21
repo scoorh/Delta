@@ -10,6 +10,7 @@ namespace resource
 
     constexpr u16 interaction_buffer_image_id = 65000;
     constexpr u16 depth_buffer_image_id = 65001;
+    constexpr u16 normal_buffer_image_id = 65002;
     constexpr u16 frame_data_buffer_id = 65000;
     constexpr u16 frame_data_buffer_id_N = 65005;
     constexpr u16 gpu_transfer_work_staging_buffer_id = 65006;
@@ -179,7 +180,10 @@ namespace resource
             b8 depth_test_enabled;
             b8 depth_write_enabled;
             u8 layout_idx;
-            u8 _pad0;
+            b8 write_to_color_buffer;
+            b8 write_to_interaction_buffer;
+            b8 write_to_normal_buffer;
+            u16 _pad0;
         };
 
         static_assert(offsetof(setup_t, id) == 0);
@@ -415,7 +419,7 @@ namespace resource::gpu_transfer_work
     void unbook(gpu_transfer_work_t *work);
 
     b8 begin(gpu_transfer_work_t *work);
-    b8 submit(gpu_transfer_work_t *work, VkSemaphore wait_for_semaphore);
+    b8 submit(gpu_transfer_work_t *work, VkSemaphore wait_for_semaphore, b8 signal_semaphore);
 
     void send_buffer_cmd(gpu_transfer_work_t *work, const gpu_transfer_work_t::cmd_t *cmd);
     void send_image_cmd(gpu_transfer_work_t *work, const gpu_transfer_work_t::cmd_t *cmd);

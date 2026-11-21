@@ -116,6 +116,7 @@ static b8 create_graphics_handle(resource::pipeline_t *pipeline, const resource:
     _.color_blend_state.pAttachments = _.blend_attachments;
     _.color_blend_state.blendConstants[0] = 1.0f;
     _.color_blend_state.blendConstants[1] = 1.0f;
+    _.color_blend_state.blendConstants[2] = 1.0f;
     _.dynamic_states[0] = VK_DYNAMIC_STATE_VIEWPORT;
     _.dynamic_states[1] = VK_DYNAMIC_STATE_SCISSOR;
     _.dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
@@ -143,13 +144,19 @@ static b8 create_graphics_handle(resource::pipeline_t *pipeline, const resource:
     {
         case resource::pipeline_layout::draw_mesh::idx:
         case resource::pipeline_layout::draw_ui::idx:
-            _.color_blend_state.attachmentCount = 2;
-            _.blend_attachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            _.blend_attachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;
-            _.rendering_state.colorAttachmentCount = 2;
+            _.color_blend_state.attachmentCount = 3;
+            _.rendering_state.colorAttachmentCount = 3;
             _.rendering_state.depthAttachmentFormat = gpu_info::format->depth_buffer;
             _.attachment_formats[0] = gpu_info::swapchain->format;
             _.attachment_formats[1] = gpu_info::format->interaction_buffer;
+            _.attachment_formats[2] = gpu_info::format->normal_buffer;
+
+            if (setup->write_to_color_buffer)
+                _.blend_attachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            if (setup->write_to_interaction_buffer)
+                _.blend_attachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;
+            if (setup->write_to_normal_buffer)
+                _.blend_attachments[2].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT;
             break;
         default:
             logger::error(logger::code::bad_graphics_pipeline_layout, setup->layout_idx);

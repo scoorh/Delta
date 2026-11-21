@@ -15,7 +15,7 @@ namespace metadata::resource_package
     constexpr u32 image_sampler_setup_size = 20;
     constexpr u32 material_setup_size = 8;
     constexpr u32 shader_setup_size = 12;
-    constexpr u32 pipeline_setup_size = 28;
+    constexpr u32 pipeline_setup_size = 32;
     constexpr u32 package_header_size = 44;
 
     // ==================================================

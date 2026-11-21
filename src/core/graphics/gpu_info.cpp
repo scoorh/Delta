@@ -67,9 +67,11 @@ static b8 validate(const gpu_info::aggregate_t *t)
     if (!t->features.descriptor_indexing) return false;
     if (!t->features.sampler_anisotropy) return false;
     if (!t->features.independent_blend) return false;
+    if (!t->features.multi_draw_indirect) return false;
 
     if (t->format.depth_buffer == VK_FORMAT_UNDEFINED) return false;
     if (t->format.interaction_buffer == VK_FORMAT_UNDEFINED) return false;
+    if (t->format.normal_buffer == VK_FORMAT_UNDEFINED) return false;
 
     if (t->memory.device_local_type_bits == 0) return false;
 
@@ -128,6 +130,7 @@ static void get_features(gpu_info::aggregate_t *t)
     t->features.descriptor_indexing = features12.descriptorIndexing;
     t->features.sampler_anisotropy = features2.features.samplerAnisotropy;
     t->features.independent_blend = features2.features.independentBlend;
+    t->features.multi_draw_indirect = features2.features.multiDrawIndirect;
 }
 
 
@@ -195,25 +198,33 @@ static void get_formats(gpu_info::aggregate_t *t)
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_D32_SFLOAT_S8_UINT, &t->format.D32_SFLOAT_S8_UINT);
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_D24_UNORM_S8_UINT, &t->format.D24_UNORM_S8_UINT);
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R32_UINT, &t->format.R32_UINT);
+    vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R16G16_SNORM, &t->format.R16G16_SNORM);
 
     t->format.depth_buffer = VK_FORMAT_UNDEFINED;
     t->format.interaction_buffer = VK_FORMAT_UNDEFINED;
+    t->format.normal_buffer = VK_FORMAT_UNDEFINED;
 
-    if (t->format.D32_SFLOAT.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+    if (t->format.D32_SFLOAT.optimalTilingFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
     {
         t->format.depth_buffer = VK_FORMAT_D32_SFLOAT;
     }
-    else if (t->format.D32_SFLOAT_S8_UINT.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+    else if (t->format.D32_SFLOAT_S8_UINT.optimalTilingFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
     {
         t->format.depth_buffer = VK_FORMAT_D32_SFLOAT_S8_UINT;
     }
-    else if (t->format.D24_UNORM_S8_UINT.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+    else if (t->format.D24_UNORM_S8_UINT.optimalTilingFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
     {
         t->format.depth_buffer = VK_FORMAT_D24_UNORM_S8_UINT;
     }
-    if (t->format.R32_UINT.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)
+
+    if (t->format.R32_UINT.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
     {
         t->format.interaction_buffer = VK_FORMAT_R32_UINT;
+    }
+
+    if (t->format.R16G16_SNORM.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
+    {
+        t->format.normal_buffer = VK_FORMAT_R16G16_SNORM;
     }
 }
 

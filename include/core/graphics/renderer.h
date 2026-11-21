@@ -32,8 +32,10 @@ namespace renderer
     inline VkImageView swapchain_image_view_array[max_swapchain_image_count] = {};
     inline VkImage interaction_buffer_image = nullptr;
     inline VkImage depth_buffer_image = nullptr;
+    inline VkImage normal_buffer_image = nullptr;
     inline VkImageView interaction_buffer_image_view = nullptr;
     inline VkImageView depth_buffer_image_view = nullptr;
+    inline VkImageView normal_buffer_image_view = nullptr;
 
     struct frame_t
     {
