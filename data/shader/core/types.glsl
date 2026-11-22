@@ -17,6 +17,7 @@ layout(std140, set = _set_, binding = _binding_) uniform _access_ frame_uniform_
     vec4 packed0; \
     vec4 global_light_direction_; \
     vec4 camera_position_; \
+    vec4 packed1; \
 } _frame_uniform;
 
 #define view_matrix _frame_uniform.view
@@ -30,6 +31,17 @@ layout(std140, set = _set_, binding = _binding_) uniform _access_ frame_uniform_
 #define ndc_scale_height _frame_uniform.packed0.w
 #define global_light_direction _frame_uniform.global_light_direction_
 #define camera_position _frame_uniform.camera_position_
+#define camera_near_z _frame_uniform.packed1.x
+#define camera_far_z _frame_uniform.packed1.y
+#endif
+
+
+#ifdef image_data_descriptor
+#define image_array(_set_, _binding_) \
+layout(set = _set_, binding = _binding_) uniform texture2D images[];
+
+#define sampler_array(_set_, _binding_) \
+layout(set = _set_, binding = _binding_) uniform sampler samplers[];
 #endif
 
 
@@ -192,4 +204,19 @@ vec3 decode_octahedral_normal(vec2 encoded)
     float t = max(-n.z, 0.0);
     n.xy += mix(vec2(t), vec2(-t), greaterThanEqual(n.xy, vec2(0.0)));
     return normalize(n);
+}
+
+
+vec3 aces_tonemap(vec3 color)
+{
+    vec3 numerator = color * (2.51 * color + 0.03);
+    vec3 denominator = color * (2.43 * color + 0.59) + 0.14;
+    return clamp(numerator / denominator, 0.0, 1.0);
+}
+
+
+float linearize_depth(float depth, float near_z, float far_z)
+{
+    return (near_z * far_z) /
+           (far_z - depth * (far_z - near_z));
 }

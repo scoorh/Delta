@@ -147,6 +147,22 @@ def process_package_header(data, output_file):
 
 def process_image_sampler_setups(array, output_file):
     global total_file_size
+
+
+    for element in array:
+        id = get_value(element, "id", 0, 1)
+        min_filter = get_value(element, "min_filter", 0, 1)
+        mag_filter = get_value(element, "mag_filter", 0, 1)
+        mipmap_mode = get_value(element, "mipmap_mode", 0, 1)
+        address_mode = get_value(element, "address_mode", 0, 1)
+
+        output_file.write(struct.pack('<H', id)) #2
+        output_file.write(struct.pack('<H', 65535)) #4
+        output_file.write(struct.pack('<I', min_filter)) #8
+        output_file.write(struct.pack('<I', mag_filter)) #12
+        output_file.write(struct.pack('<I', mipmap_mode)) #16
+        output_file.write(struct.pack('<I', address_mode)) #20
+
     return
 
 

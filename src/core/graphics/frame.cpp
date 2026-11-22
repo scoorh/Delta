@@ -1,7 +1,5 @@
 #include <core/types.h>
 
-#include "game/metadata.h"
-
 
 static void create_semaphores(renderer::frame_t* frame);
 static void create_fences(renderer::frame_t* frame);
@@ -15,15 +13,29 @@ static void update_descriptor_sets(renderer::frame_t* frame);
 
 namespace renderer
 {
+    void initialize_frames_descriptors()
+    {
+        for (u8 f = 0; f < frames_in_flight; ++f)
+        {
+            auto frame = &frames[f];
+
+            create_descriptor_pool(frame);
+            create_descriptor_sets(frame);
+        }
+    }
+
+
     void initialize_frames()
     {
-        auto cull_mesh_pipeline = resource::pipeline::find(metadata::resource_package::cull_mesh_pipeline_id);
+        const auto cull_mesh_pipeline = resource::pipeline::find(metadata::resource_package::cull_mesh_pipeline_id);
+        const auto inner_mesh_outline_and_tonemap_pipeline = resource::pipeline::find(metadata::resource_package::inner_mesh_outline_and_tonemap_pipeline_id);
 
+        const auto color_buffer_image_ = resource::image::find(resource::color_buffer_image_id);
+        const auto normal_buffer_image_ = resource::image::find(resource::normal_buffer_image_id);
+        const auto depth_buffer_image_ = resource::image::find(resource::depth_buffer_image_id);
 
-        if (!cull_mesh_pipeline)
-        {
-            logger::critical_error(logger::code::missing_cull_mesh_pipeline, metadata::resource_package::cull_mesh_pipeline_id);
-        }
+        const auto linear_linear_linear_sampler = resource::image_sampler::find(metadata::resource_package::linear_linear_linear_sampler_id);
+        const auto nearest_nearest_nearest_sampler = resource::image_sampler::find(metadata::resource_package::nearest_nearest_nearest_sampler_id);
 
 
         for (u8 f = 0; f < frames_in_flight; ++f)
@@ -34,8 +46,6 @@ namespace renderer
             create_fences(frame);
             create_command_pools(frame);
             create_command_buffers(frame);
-            create_descriptor_pool(frame);
-            create_descriptor_sets(frame);
             create_data_buffer(frame, f);
             update_descriptor_sets(frame);
 
@@ -43,9 +53,18 @@ namespace renderer
             frame->gpu_transfer_work->booked = true;
             frame->gpu_transfer_completed = frame->gpu_transfer_work->transfer_completed;
 
-            frame->cull_mesh_pipeline = cull_mesh_pipeline->handle;
-            frame->cull_mesh_pipeline_layout = cull_mesh_pipeline->layout;
-            frame->compute_shader_wave_size = 32;
+            frame->pipeline.compute.cull_mesh = cull_mesh_pipeline->handle;
+            frame->pipeline.compute.cull_mesh_layout = cull_mesh_pipeline->layout;
+            frame->pipeline.compute.wave_size = 32;
+
+            frame->pipeline.post_process.inner_mesh_outline_and_tonemap = inner_mesh_outline_and_tonemap_pipeline->handle;
+            frame->pipeline.post_process.inner_mesh_outline_and_tonemap_layout = inner_mesh_outline_and_tonemap_pipeline->layout;
+            frame->pipeline.post_process.push_constant.color_buffer_image_idx = color_buffer_image_->descriptor_index;
+            frame->pipeline.post_process.push_constant.color_buffer_sampler_idx = linear_linear_linear_sampler->descriptor_index;
+            frame->pipeline.post_process.push_constant.normal_buffer_image_idx = normal_buffer_image_->descriptor_index;
+            frame->pipeline.post_process.push_constant.normal_buffer_sampler_idx = nearest_nearest_nearest_sampler->descriptor_index;
+            frame->pipeline.post_process.push_constant.depth_buffer_image_idx = depth_buffer_image_->descriptor_index;
+            frame->pipeline.post_process.push_constant.depth_buffer_sampler_idx = linear_linear_linear_sampler->descriptor_index;
         }
     }
 }
@@ -134,7 +153,7 @@ static void create_command_buffers(renderer::frame_t* frame)
     } dst[command_buffer_count];
 
     dst[0].commandPool = frame->default_command_pool;
-    dst[0].dst = &frame->draw_to_swapchain_cmd_buffer;
+    dst[0].dst = &frame->draw_cmd_buffer;
     dst[1].commandPool = frame->default_command_pool;
     dst[1].dst = &frame->compute_cmd_buffer;
 
@@ -249,6 +268,9 @@ static void create_descriptor_sets(renderer::frame_t* frame)
 
     frame->descriptor_set.cull_mesh_array[resource::pipeline_layout::cull_mesh::frame_data_descriptor_idx] = frame->descriptor_set.frame_data;
     frame->descriptor_set.cull_mesh_array[resource::pipeline_layout::cull_mesh::mesh_cull_data_descriptor_idx] = frame->descriptor_set.mesh_cull_data;
+
+    frame->descriptor_set.post_process_array[resource::pipeline_layout::post_process::frame_data_descriptor_idx] = frame->descriptor_set.frame_data;
+    frame->descriptor_set.post_process_array[resource::pipeline_layout::post_process::image_data_descriptor_idx] = frame->descriptor_set.image_data;
 }
 
 

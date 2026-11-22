@@ -24,6 +24,7 @@ namespace metadata::resource_package
     constexpr u32 pipeline_layout_cull_mesh = 1;
     constexpr u32 pipeline_layout_draw_mesh = 2;
     constexpr u32 pipeline_layout_draw_ui = 0;
+    constexpr u32 pipeline_layout_post_process = 3;
 
     // ==================================================
     // image sampler
@@ -37,6 +38,9 @@ namespace metadata::resource_package
     constexpr u32 address_mode_mirror_clamp_to_edge = 4;
     constexpr u32 mipmap_mode_nearest = 0;
     constexpr u32 mipmap_mode_linear = 1;
+
+    constexpr u32 linear_linear_linear_sampler_id = 1;
+    constexpr u32 nearest_nearest_nearest_sampler_id = 2;
 
     // ==================================================
     // pipeline
@@ -61,6 +65,25 @@ namespace metadata::resource_package
     // ==================================================
     constexpr u32 usage_index_buffer = 66;
     constexpr u32 usage_vertex_storage_buffer = 34;
+
+    // ==================================================
+    // shader
+    // ==================================================
+    constexpr u32 cull_mesh_cs_id = 1;
+    constexpr u32 outer_mesh_outline_fs_id = 2;
+    constexpr u32 outer_mesh_outline_vs_id = 3;
+    constexpr u32 draw_character_vs_id = 4;
+    constexpr u32 draw_character_fs_id = 5;
+    constexpr u32 fullscreen_quad_vs_id = 6;
+    constexpr u32 inner_mesh_outline_and_tonemap_fs_id = 7;
+
+    // ==================================================
+    // pipeline
+    // ==================================================
+    constexpr u32 cull_mesh_pipeline_id = 1;
+    constexpr u32 outer_mesh_outline_pipeline_id = 2;
+    constexpr u32 draw_character_pipeline_id = 3;
+    constexpr u32 inner_mesh_outline_and_tonemap_pipeline_id = 4;
 }
 
 
@@ -76,6 +99,7 @@ static_assert(metadata::resource_package::package_header_size == sizeof(file::re
 static_assert(offsetof(resource::pipeline_layout_t, array[metadata::resource_package::pipeline_layout_draw_ui]) == offsetof(resource::pipeline_layout_t, draw_ui));
 static_assert(offsetof(resource::pipeline_layout_t, array[metadata::resource_package::pipeline_layout_draw_mesh]) == offsetof(resource::pipeline_layout_t, draw_mesh));
 static_assert(offsetof(resource::pipeline_layout_t, array[metadata::resource_package::pipeline_layout_cull_mesh]) == offsetof(resource::pipeline_layout_t, cull_mesh));
+static_assert(offsetof(resource::pipeline_layout_t, array[metadata::resource_package::pipeline_layout_post_process]) == offsetof(resource::pipeline_layout_t, post_process));
 
 static_assert(metadata::resource_package::filter_nearest == VK_FILTER_NEAREST);
 static_assert(metadata::resource_package::filter_linear == VK_FILTER_LINEAR);

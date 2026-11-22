@@ -11,6 +11,7 @@ namespace resource
     constexpr u16 interaction_buffer_image_id = 65000;
     constexpr u16 depth_buffer_image_id = 65001;
     constexpr u16 normal_buffer_image_id = 65002;
+    constexpr u16 color_buffer_image_id = 65003;
     constexpr u16 frame_data_buffer_id = 65000;
     constexpr u16 frame_data_buffer_id_N = 65005;
     constexpr u16 gpu_transfer_work_staging_buffer_id = 65006;
@@ -321,8 +322,7 @@ namespace resource
         VkFence all_completed;
         VkSemaphore transfer_completed;
         VkCommandPool default_cmd_pool;
-        VkCommandBuffer transfer_cmd_buffer;
-        VkCommandBuffer readback_cmd_buffer;
+        VkCommandBuffer cmd_buffer;
     };
 }
 
@@ -371,6 +371,12 @@ namespace resource::image
     image_t *create(const setup_t *setup);
     void destroy(image_t *image);
     image_t *find(u16 id);
+
+    void layout_transition(VkImageMemoryBarrier2 *o,
+                           VkImage image, VkImageAspectFlags aspect,
+                           VkImageLayout old_layout, VkImageLayout new_layout,
+                           VkPipelineStageFlags2 src_stage, VkAccessFlags2 src_access,
+                           VkPipelineStageFlags2 dst_stage, VkAccessFlags2 dst_access);
 }
 
 
@@ -439,9 +445,9 @@ namespace resource::gpu_transfer_work
 
 
     template<typename T>
-    T* memory_pointer(const gpu_transfer_work_t *work)
+    T *memory_pointer(const gpu_transfer_work_t *work)
     {
-        return (T*)memory_pointer(work);
+        return (T *) memory_pointer(work);
     }
 }
 

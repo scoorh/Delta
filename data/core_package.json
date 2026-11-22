@@ -9,6 +9,20 @@
   ],
 
   "image_sampler": [
+    {
+      "id": "metadata::resource_package::linear_linear_linear_sampler_id",
+      "min_filter": "metadata::resource_package::filter_linear",
+      "mag_filter": "metadata::resource_package::filter_linear",
+      "mipmap_mode": "metadata::resource_package::mipmap_mode_linear",
+      "address_mode": "metadata::resource_package::address_mode_clamp_to_edge"
+    },
+    {
+      "id": "metadata::resource_package::nearest_nearest_nearest_sampler_id",
+      "min_filter": "metadata::resource_package::filter_nearest",
+      "mag_filter": "metadata::resource_package::filter_nearest",
+      "mipmap_mode": "metadata::resource_package::mipmap_mode_nearest",
+      "address_mode": "metadata::resource_package::address_mode_clamp_to_edge"
+    }
   ],
 
   "material": [
@@ -20,12 +34,12 @@
       "src_file": "/shader/cull_mesh.comp.spv"
     },
     {
-      "id": "metadata::resource_package::mesh_outline_fs_id",
-      "src_file": "/shader/mesh_outline.frag.spv"
+      "id": "metadata::resource_package::outer_mesh_outline_fs_id",
+      "src_file": "/shader/outer_mesh_outline.frag.spv"
     },
     {
-      "id": "metadata::resource_package::mesh_outline_vs_id",
-      "src_file": "/shader/mesh_outline.vert.spv"
+      "id": "metadata::resource_package::outer_mesh_outline_vs_id",
+      "src_file": "/shader/outer_mesh_outline.vert.spv"
     },
     {
       "id": "metadata::resource_package::draw_character_fs_id",
@@ -34,6 +48,14 @@
     {
       "id": "metadata::resource_package::draw_character_vs_id",
       "src_file": "/shader/draw_character.vert.spv"
+    },
+    {
+      "id": "metadata::resource_package::fullscreen_quad_vs_id",
+      "src_file": "/shader/fullscreen_quad.vert.spv"
+    },
+    {
+      "id": "metadata::resource_package::inner_mesh_outline_and_tonemap_fs_id",
+      "src_file": "/shader/inner_mesh_outline_and_tonemap.frag.spv"
     }
   ],
 
@@ -45,27 +67,33 @@
       "layout_idx": "metadata::resource_package::pipeline_layout_cull_mesh"
     },
     {
-      "id": "metadata::resource_package::mesh_outline_pipeline_id",
-      "is_compute": 0,
-      "vertex_shader_id": "metadata::resource_package::mesh_outline_vs_id",
-      "fragment_shader_id": "metadata::resource_package::mesh_outline_fs_id",
+      "id": "metadata::resource_package::inner_mesh_outline_and_tonemap_pipeline_id",
+      "vertex_shader_id": "metadata::resource_package::fullscreen_quad_vs_id",
+      "fragment_shader_id": "metadata::resource_package::inner_mesh_outline_and_tonemap_fs_id",
+      "layout_idx": "metadata::resource_package::pipeline_layout_post_process",
+      "primitive_topology": "metadata::resource_package::primitive_topology_triangle_list",
+      "polygon_mode": "metadata::resource_package::polygon_mode_fill",
+      "cull_mode": "metadata::resource_package::cull_mode_back_face",
+      "front_face": "metadata::resource_package::front_face_clockwise",
+      "write_to_color_buffer": 1
+    },
+    {
+      "id": "metadata::resource_package::outer_mesh_outline_pipeline_id",
+      "vertex_shader_id": "metadata::resource_package::outer_mesh_outline_vs_id",
+      "fragment_shader_id": "metadata::resource_package::outer_mesh_outline_fs_id",
       "layout_idx": "metadata::resource_package::pipeline_layout_draw_mesh",
-      "primitive_restart_enabled": 0,
       "primitive_topology": "metadata::resource_package::primitive_topology_triangle_list",
       "polygon_mode": "metadata::resource_package::polygon_mode_fill",
       "cull_mode": "metadata::resource_package::cull_mode_front_face",
       "front_face": "metadata::resource_package::front_face_clockwise",
       "depth_test_enabled": 1,
-      "depth_write_enabled": 0,
       "write_to_color_buffer": 1
     },
     {
       "id": "metadata::resource_package::draw_character_pipeline_id",
-      "is_compute": 0,
       "vertex_shader_id": "metadata::resource_package::draw_character_vs_id",
       "fragment_shader_id": "metadata::resource_package::draw_character_fs_id",
       "layout_idx": "metadata::resource_package::pipeline_layout_draw_mesh",
-      "primitive_restart_enabled": 0,
       "primitive_topology": "metadata::resource_package::primitive_topology_triangle_list",
       "polygon_mode": "metadata::resource_package::polygon_mode_fill",
       "cull_mode": "metadata::resource_package::cull_mode_back_face",

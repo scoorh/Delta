@@ -42,6 +42,7 @@ namespace logger
         vkAllocateMemory,
         create_depth_buffer,
         create_normal_buffer,
+        create_color_buffer,
         create_interaction_buffer,
         vkCreateGraphicsPipelines,
         vkCreateComputePipelines,
@@ -56,6 +57,7 @@ namespace logger
         vkCreateDescriptorSetLayout_mesh_cull_data,
         vkCreatePipelineLayout_draw_mesh,
         vkCreatePipelineLayout_draw_ui,
+        vkCreatePipelineLayout_post_process,
         vkCreatePipelineLayout_cull_mesh,
         missing_index_buffer,
         missing_position_vertex_buffer,
@@ -63,6 +65,12 @@ namespace logger
         reserve_index_buffer_space,
         reserve_position_vertex_buffer_space,
         reserve_attribute_vertex_buffer_space,
+        missing_cull_mesh_pipeline,
+        missing_inner_mesh_outline_and_tonemap_pipeline,
+        missing_draw_character_pipeline,
+        missing_outer_mesh_outline_pipeline,
+        missing_linear_linear_linear_sampler,
+        missing_nearest_nearest_nearest_sampler,
 
         load_vulkan_dll,
 
@@ -91,7 +99,6 @@ namespace logger
         vkEndCommandBuffer_gpu_transfer_work,
         vkQueueSubmit2_gpu_transfer_work,
 
-        missing_cull_mesh_pipeline,
         vkCreateSemaphore_frame,
         vkCreateFence_frame,
         vkCreateCommandPool_frame,

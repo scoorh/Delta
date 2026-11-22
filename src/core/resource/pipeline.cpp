@@ -147,7 +147,7 @@ static b8 create_graphics_handle(resource::pipeline_t *pipeline, const resource:
             _.color_blend_state.attachmentCount = 3;
             _.rendering_state.colorAttachmentCount = 3;
             _.rendering_state.depthAttachmentFormat = gpu_info::format->depth_buffer;
-            _.attachment_formats[0] = gpu_info::swapchain->format;
+            _.attachment_formats[0] = gpu_info::format->color_buffer;
             _.attachment_formats[1] = gpu_info::format->interaction_buffer;
             _.attachment_formats[2] = gpu_info::format->normal_buffer;
 
@@ -158,6 +158,18 @@ static b8 create_graphics_handle(resource::pipeline_t *pipeline, const resource:
             if (setup->write_to_normal_buffer)
                 _.blend_attachments[2].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT;
             break;
+
+        case resource::pipeline_layout::post_process::idx:
+            _.color_blend_state.attachmentCount = 1;
+            _.rendering_state.colorAttachmentCount = 1;
+            _.depth_stencil_state.depthTestEnable = false;
+            _.depth_stencil_state.depthWriteEnable = false;
+            _.attachment_formats[0] = gpu_info::swapchain->format;
+
+            if (setup->write_to_color_buffer)
+                _.blend_attachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            break;
+
         default:
             logger::error(logger::code::bad_graphics_pipeline_layout, setup->layout_idx);
             return false;

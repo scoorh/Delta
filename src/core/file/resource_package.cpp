@@ -7,6 +7,32 @@ static b8 send_materials_to_gpu(resource::material_t **materials, u32 material_c
 
 namespace file::resource_package
 {
+    void validate_core_package_load()
+    {
+        const auto cull_mesh_pipeline = resource::pipeline::find(metadata::resource_package::cull_mesh_pipeline_id);
+        const auto inner_mesh_outline_and_tonemap_pipeline = resource::pipeline::find(metadata::resource_package::inner_mesh_outline_and_tonemap_pipeline_id);
+        const auto draw_character_pipeline = resource::pipeline::find(metadata::resource_package::draw_character_pipeline_id);
+        const auto outer_mesh_outline_pipeline = resource::pipeline::find(metadata::resource_package::outer_mesh_outline_pipeline_id);
+
+        const auto linear_linear_linear_sampler = resource::image_sampler::find(metadata::resource_package::linear_linear_linear_sampler_id);
+        const auto nearest_nearest_nearest_sampler = resource::image_sampler::find(metadata::resource_package::nearest_nearest_nearest_sampler_id);
+
+        if (!cull_mesh_pipeline)
+            logger::critical_error(logger::code::missing_cull_mesh_pipeline, metadata::resource_package::cull_mesh_pipeline_id);
+        if (!inner_mesh_outline_and_tonemap_pipeline)
+            logger::critical_error(logger::code::missing_inner_mesh_outline_and_tonemap_pipeline, metadata::resource_package::inner_mesh_outline_and_tonemap_pipeline_id);
+        if (!draw_character_pipeline)
+            logger::critical_error(logger::code::missing_draw_character_pipeline, metadata::resource_package::draw_character_pipeline_id);
+        if (!outer_mesh_outline_pipeline)
+            logger::critical_error(logger::code::missing_outer_mesh_outline_pipeline, metadata::resource_package::outer_mesh_outline_pipeline_id);
+
+        if (!linear_linear_linear_sampler)
+            logger::critical_error(logger::code::missing_linear_linear_linear_sampler, metadata::resource_package::linear_linear_linear_sampler_id);
+        if (!nearest_nearest_nearest_sampler)
+            logger::critical_error(logger::code::missing_nearest_nearest_nearest_sampler, metadata::resource_package::nearest_nearest_nearest_sampler_id);
+    }
+
+
     b8 open(resource_package_t *f, const c8 *filename)
     {
         if (!base::open(&f->base, filename, "rb"))

@@ -12,20 +12,12 @@ namespace metadata::resource_package
     // ==================================================
     // shader
     // ==================================================
-    constexpr u32 cull_mesh_cs_id = 1;
-    constexpr u32 mesh_outline_fs_id = 2;
-    constexpr u32 mesh_outline_vs_id = 3;
-    constexpr u32 draw_character_vs_id = 4;
-    constexpr u32 draw_character_fs_id = 5;
     constexpr u32 default_draw_ui_vs_id = 202;
     constexpr u32 default_draw_ui_fs_id = 203;
 
     // ==================================================
     // pipeline
     // ==================================================
-    constexpr u32 cull_mesh_pipeline_id = 1;
-    constexpr u32 mesh_outline_pipeline_id = 2;
-    constexpr u32 draw_character_pipeline_id = 3;
     constexpr u32 default_draw_ui_pipeline_id = 201;
 
     // ==================================================

@@ -59,8 +59,8 @@ static b8 create_handle(resource::image_sampler_t *image_sampler, const resource
 {
     VkSamplerCreateInfo sampler_create_info = {};
     sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    sampler_create_info.magFilter = setup->min_filter;
-    sampler_create_info.minFilter = setup->mag_filter;
+    sampler_create_info.magFilter = setup->mag_filter;
+    sampler_create_info.minFilter = setup->min_filter;
     sampler_create_info.mipmapMode = setup->mipmap_mode;
     sampler_create_info.addressModeU = setup->address_mode;
     sampler_create_info.addressModeV = setup->address_mode;

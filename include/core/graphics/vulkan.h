@@ -75,6 +75,7 @@ namespace vulkan
     inline PFN_vkResetCommandPool vkResetCommandPool = nullptr;
     inline PFN_vkBeginCommandBuffer vkBeginCommandBuffer = nullptr;
     inline PFN_vkCmdCopyBuffer2 vkCmdCopyBuffer2 = nullptr;
+    inline PFN_vkCmdCopyImageToBuffer vkCmdCopyImageToBuffer = nullptr;
     inline PFN_vkCmdPipelineBarrier2 vkCmdPipelineBarrier2 = nullptr;
     inline PFN_vkCmdBeginRendering vkCmdBeginRendering = nullptr;
     inline PFN_vkCmdSetViewport vkCmdSetViewport = nullptr;

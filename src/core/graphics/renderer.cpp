@@ -9,10 +9,15 @@ static void reset_fence(renderer::frame_t *frame);
 static void reset_commands(renderer::frame_t *frame);
 static b8 acquire_swapchain_image(renderer::frame_t *frame);
 static void present_swapchain_image(renderer::frame_t *frame);
-static void begin_draw_to_swapchain_commands(renderer::frame_t *frame);
-static void submit_draw_to_swapchain_commands(renderer::frame_t *frame);
+static void begin_draw_commands(renderer::frame_t *frame);
+static void geometry_pass(renderer::frame_t *frame);
+static void post_process_pass(renderer::frame_t *frame);
+static void submit_draw_commands(renderer::frame_t *frame);
+static void readback_interaction_buffer(renderer::frame_t *frame);
 static void transfer_frame_data(renderer::frame_t *frame);
 static void transfer_frame_uniform(renderer::frame_t *frame);
+static void begin_compute_commands(renderer::frame_t *frame);
+static void cull_mesh_pass(renderer::frame_t *frame);
 static void submit_compute_commands(renderer::frame_t *frame);
 
 
@@ -24,9 +29,10 @@ namespace renderer
         window::initialize();
         gpu_info::enumerate();
         initialize_device();
-        initialize_swapchain();
         resource::descriptor_set_layout::initialize();
         resource::pipeline_layout::initialize();
+        initialize_frames_descriptors();
+        initialize_swapchain();
         resource::gpu_transfer_work::initialize();
         file::resource_package::load_everything("data/core.package");
         initialize_frames();
@@ -49,11 +55,231 @@ namespace renderer
         reset_commands(frame);
 
         transfer_frame_data(frame);
+
+        begin_compute_commands(frame);
+        cull_mesh_pass(frame);
         submit_compute_commands(frame);
-        begin_draw_to_swapchain_commands(frame);
-        submit_draw_to_swapchain_commands(frame);
+
+        begin_draw_commands(frame);
+        geometry_pass(frame);
+        post_process_pass(frame);
+        submit_draw_commands(frame);
+
         present_swapchain_image(frame);
     }
+}
+
+
+static void geometry_pass(renderer::frame_t *frame)
+{
+    const auto cmd = frame->draw_cmd_buffer;
+
+    constexpr u32 attachment_image_barrier_count = 4;
+    VkImageMemoryBarrier2 attachment_image_barriers[attachment_image_barrier_count] = {};
+    VkDependencyInfo layout_transition_barrier_dependency_info = {};
+
+    layout_transition_barrier_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+    layout_transition_barrier_dependency_info.imageMemoryBarrierCount = attachment_image_barrier_count;
+    layout_transition_barrier_dependency_info.pImageMemoryBarriers = attachment_image_barriers;
+
+    resource::image::layout_transition(&attachment_image_barriers[0],
+                                       renderer::color_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+
+    resource::image::layout_transition(&attachment_image_barriers[1],
+                                       renderer::interaction_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+
+    resource::image::layout_transition(&attachment_image_barriers[2],
+                                       renderer::normal_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+
+    resource::image::layout_transition(&attachment_image_barriers[3],
+                                       renderer::depth_buffer_image, VK_IMAGE_ASPECT_DEPTH_BIT,
+                                       VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                                       VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+
+    vulkan::vkCmdPipelineBarrier2(cmd, &layout_transition_barrier_dependency_info);
+
+
+    constexpr u32 color_attachment_count = 3;
+    VkRenderingAttachmentInfo color_attachment_info[color_attachment_count] = {};
+    VkRenderingAttachmentInfo depth_attachment_info = {};
+
+    color_attachment_info[0].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    color_attachment_info[0].imageView = renderer::color_buffer_image_view;
+    color_attachment_info[0].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    color_attachment_info[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment_info[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment_info[0].clearValue.color.float32[0] = 0.39f;
+    color_attachment_info[0].clearValue.color.float32[1] = 0.58f;
+    color_attachment_info[0].clearValue.color.float32[2] = 0.93f;
+    color_attachment_info[0].clearValue.color.float32[3] = 1.0f;
+
+    color_attachment_info[1].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    color_attachment_info[1].imageView = renderer::interaction_buffer_image_view;
+    color_attachment_info[1].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    color_attachment_info[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment_info[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment_info[1].clearValue.color.uint32[0] = 0xffffffff;
+
+    color_attachment_info[2].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    color_attachment_info[2].imageView = renderer::normal_buffer_image_view;
+    color_attachment_info[2].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    color_attachment_info[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment_info[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment_info[2].clearValue.color.float32[0] = 0.0f;
+    color_attachment_info[2].clearValue.color.float32[1] = 0.0f;
+    color_attachment_info[2].clearValue.color.float32[2] = 0.0f;
+    color_attachment_info[2].clearValue.color.float32[3] = 0.0f;
+
+    depth_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    depth_attachment_info.imageView = renderer::depth_buffer_image_view;
+    depth_attachment_info.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    depth_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    depth_attachment_info.clearValue.depthStencil.depth = 1.0f;
+
+    VkRenderingInfo rendering_info = {};
+    rendering_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+    rendering_info.renderArea.extent.width = renderer::window_width;
+    rendering_info.renderArea.extent.height = renderer::window_height;
+    rendering_info.layerCount = 1;
+    rendering_info.colorAttachmentCount = color_attachment_count;
+    rendering_info.pColorAttachments = color_attachment_info;
+    rendering_info.pDepthAttachment = &depth_attachment_info;
+
+    vulkan::vkCmdBeginRendering(cmd, &rendering_info);
+
+
+    VkRect2D scissor = {};
+    VkViewport viewport = {};
+
+    scissor.extent.width = renderer::window_width;
+    scissor.extent.height = renderer::window_height;
+    viewport.width = static_cast<f32>(renderer::window_width);
+    viewport.height = static_cast<f32>(renderer::window_height);
+    viewport.maxDepth = 1.0f;
+
+    vulkan::vkCmdSetViewport(cmd, 0, 1, &viewport);
+    vulkan::vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+
+    auto pipeline = resource::pipeline::find(metadata::resource_package::outer_mesh_outline_pipeline_id);
+    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
+    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, resource::pipeline_layout::draw_mesh::descriptor_count, frame->descriptor_set.draw_mesh_array, 0, nullptr);
+
+    auto mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
+    vulkan::vkCmdBindIndexBuffer(cmd, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT16);
+
+    vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 3, sizeof(resource::shader::mesh_indirect_draw_cmd_t));
+
+
+    pipeline = resource::pipeline::find(metadata::resource_package::draw_character_pipeline_id);
+    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
+    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, resource::pipeline_layout::draw_mesh::descriptor_count, frame->descriptor_set.draw_mesh_array, 0, nullptr);
+
+    mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
+    vulkan::vkCmdBindIndexBuffer(cmd, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT16);
+
+    vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 3, sizeof(resource::shader::mesh_indirect_draw_cmd_t));
+
+    vulkan::vkCmdEndRendering(cmd);
+}
+
+
+static void post_process_pass(renderer::frame_t *frame)
+{
+    const auto cmd = frame->draw_cmd_buffer;
+
+    constexpr u32 attachment_image_barrier_count = 4;
+    VkImageMemoryBarrier2 attachment_image_barriers[attachment_image_barrier_count] = {};
+    VkDependencyInfo layout_transition_barrier_dependency_info = {};
+
+    layout_transition_barrier_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+    layout_transition_barrier_dependency_info.imageMemoryBarrierCount = attachment_image_barrier_count;
+    layout_transition_barrier_dependency_info.pImageMemoryBarriers = attachment_image_barriers;
+
+    resource::image::layout_transition(&attachment_image_barriers[0],
+                                       renderer::swapchain_image_array[frame->acquired_swapchain_image_idx], VK_IMAGE_ASPECT_COLOR_BIT,
+                                       VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+
+    resource::image::layout_transition(&attachment_image_barriers[1],
+                                       renderer::color_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                       VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
+
+    resource::image::layout_transition(&attachment_image_barriers[2],
+                                       renderer::normal_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                       VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
+
+    resource::image::layout_transition(&attachment_image_barriers[3],
+                                       renderer::depth_buffer_image, VK_IMAGE_ASPECT_DEPTH_BIT,
+                                       VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                                       VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
+
+    vulkan::vkCmdPipelineBarrier2(cmd, &layout_transition_barrier_dependency_info);
+
+
+    constexpr u32 color_attachment_count = 1;
+    VkRenderingAttachmentInfo color_attachment_info[color_attachment_count] = {};
+
+    color_attachment_info[0].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    color_attachment_info[0].imageView = renderer::swapchain_image_view_array[frame->acquired_swapchain_image_idx];
+    color_attachment_info[0].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    color_attachment_info[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    color_attachment_info[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+    VkRenderingInfo rendering_info = {};
+    rendering_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+    rendering_info.renderArea.extent.width = renderer::window_width;
+    rendering_info.renderArea.extent.height = renderer::window_height;
+    rendering_info.layerCount = 1;
+    rendering_info.colorAttachmentCount = color_attachment_count;
+    rendering_info.pColorAttachments = color_attachment_info;
+
+    vulkan::vkCmdBeginRendering(cmd, &rendering_info);
+
+
+    VkRect2D scissor = {};
+    VkViewport viewport = {};
+
+    scissor.extent.width = renderer::window_width;
+    scissor.extent.height = renderer::window_height;
+    viewport.width = static_cast<f32>(renderer::window_width);
+    viewport.height = static_cast<f32>(renderer::window_height);
+    viewport.maxDepth = 1.0f;
+
+    vulkan::vkCmdSetViewport(cmd, 0, 1, &viewport);
+    vulkan::vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+
+    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.exposure = 1.0f;
+    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.normal_threshold = 0.12f;
+    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.normal_softness = 0.08f;
+    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.depth_threshold = 0.015f;
+    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.depth_softness = 0.02f;
+    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.outline_strength = 0.9f;
+    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, frame->pipeline.post_process.inner_mesh_outline_and_tonemap);
+    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, frame->pipeline.post_process.inner_mesh_outline_and_tonemap_layout, 0, resource::pipeline_layout::post_process::descriptor_count, frame->descriptor_set.post_process_array, 0, nullptr);
+    vulkan::vkCmdPushConstants(cmd, frame->pipeline.post_process.inner_mesh_outline_and_tonemap_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(frame->pipeline.post_process.push_constant), &frame->pipeline.post_process.push_constant);
+    vulkan::vkCmdDraw(cmd, 3, 1, 0, 0);
+
+
+    vulkan::vkCmdEndRendering(cmd);
 }
 
 
@@ -64,6 +290,8 @@ static void transfer_frame_uniform(renderer::frame_t *frame)
 
     math::vector4_t global_light_direction = {-0.57735f, -0.57735f, 0.57735f, 0.0f};
     math::quaternion_t camera_rotation;
+    f32 camera_near_z = 0.01f;
+    f32 camera_far_z = 1000.0f;
     math::vector4_t camera_position = {0.0f, 4.0f, 2.0f, 0.0f};
     math::quaternion::from_euler(&camera_rotation, 0, 0, 0);
     //math::vector4_t camera_position = {15.0f, 20.0f, 15.0f, 0.0f};
@@ -79,10 +307,12 @@ static void transfer_frame_uniform(renderer::frame_t *frame)
     frame_data_uniform->viewport_size.height = (f32) renderer::window_height;
     frame_data_uniform->ndc_scale.width = 2.0f / (f32) renderer::window_width;
     frame_data_uniform->ndc_scale.height = 2.0f / (f32) renderer::window_height;
+    frame_data_uniform->camera_near_z = camera_near_z;
+    frame_data_uniform->camera_far_z = camera_far_z;
 
     math::matrix4x4::identity(&frame_data_uniform->projection);
     math::matrix4x4::identity(&frame_data_uniform->view);
-    math::matrix4x4::perspective(&frame_data_uniform->projection, (f32) renderer::window_width / (f32) renderer::window_height, math::degree_to_radian(60), 0.01f, 1000.0f);
+    math::matrix4x4::perspective(&frame_data_uniform->projection, (f32) renderer::window_width / (f32) renderer::window_height, math::degree_to_radian(60), camera_near_z, camera_far_z);
     math::matrix4x4::look_at(&frame_data_uniform->view, &camera_position, &camera_rotation);
     math::matrix4x4::multiply(&frame_data_uniform->view_projection, &frame_data_uniform->projection, &frame_data_uniform->view);
 
@@ -105,12 +335,11 @@ static void transfer_frame_uniform(renderer::frame_t *frame)
     math::quaternion_t q = {1.0f, 0.0f, 0.0f, 0.0f};
 
     static float rr = 0.0f;
-    rr += 0.005f;
+    rr += 0.0015f;
     math::quaternion::from_euler(&q, 0.0f, rr, 0.0f);
 
 
     math::matrix4x4::world_transform(&m, 0.0f, 0.0f, 0.0f, 0.5f, &q);
-
 
 
     mesh_instance[0].packed0.x = m.columns[0].x;
@@ -217,112 +446,15 @@ static void transfer_frame_data(renderer::frame_t *frame)
     const auto gpu_transfer_work = frame->gpu_transfer_work;
 
     resource::gpu_transfer_work::begin(gpu_transfer_work);
+    readback_interaction_buffer(frame);
     transfer_frame_uniform(frame);
     resource::gpu_transfer_work::submit(gpu_transfer_work, nullptr, true);
 }
 
 
-static void submit_compute_commands(renderer::frame_t *frame)
+static void begin_draw_commands(renderer::frame_t *frame)
 {
-    const auto cmd = frame->compute_cmd_buffer;
-
-    VkCommandBufferBeginInfo command_buffer_begin_info = {};
-    command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    command_buffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-    auto result = vulkan::vkBeginCommandBuffer(cmd, &command_buffer_begin_info);
-    if (result)
-    {
-        logger::critical_error(logger::code::vkBeginCommandBuffer_compute, result);
-    }
-
-
-    resource::pipeline_layout::cull_mesh::push_constant_t cull_mesh_push_constant = {};
-    cull_mesh_push_constant.instance_count = 3;
-    cull_mesh_push_constant.indirect_draw_cmd_count = 3;
-
-    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, frame->cull_mesh_pipeline);
-    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, frame->cull_mesh_pipeline_layout, 0, resource::pipeline_layout::cull_mesh::descriptor_count, frame->descriptor_set.cull_mesh_array, 0, nullptr);
-    vulkan::vkCmdPushConstants(cmd, frame->cull_mesh_pipeline_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(cull_mesh_push_constant), &cull_mesh_push_constant);
-    vulkan::vkCmdDispatch(cmd, (cull_mesh_push_constant.indirect_draw_cmd_count + frame->compute_shader_wave_size - 1) / frame->compute_shader_wave_size, 1, 1);
-
-
-    VkBufferMemoryBarrier2 buffer_memory_barrier[2] = {};
-    VkDependencyInfo barrier_dependency_info = {};
-
-    buffer_memory_barrier[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
-    buffer_memory_barrier[0].srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
-    buffer_memory_barrier[0].srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
-    buffer_memory_barrier[0].dstStageMask = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
-    buffer_memory_barrier[0].dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
-    buffer_memory_barrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    buffer_memory_barrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    buffer_memory_barrier[0].buffer = frame->data_buffer;
-    buffer_memory_barrier[0].offset = frame->data_offset.mesh_instance_indices;
-    buffer_memory_barrier[0].size = sizeof(resource::shader::mesh_instance_index_t) * cull_mesh_push_constant.instance_count;
-    buffer_memory_barrier[1].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
-    buffer_memory_barrier[1].srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
-    buffer_memory_barrier[1].srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
-    buffer_memory_barrier[1].dstStageMask = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
-    buffer_memory_barrier[1].dstAccessMask = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
-    buffer_memory_barrier[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    buffer_memory_barrier[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    buffer_memory_barrier[1].buffer = frame->data_buffer;
-    buffer_memory_barrier[1].offset = frame->data_offset.mesh_indirect_draw_cmds;
-    buffer_memory_barrier[1].size = sizeof(resource::shader::mesh_indirect_draw_cmd_t) * cull_mesh_push_constant.indirect_draw_cmd_count;
-
-    barrier_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-    barrier_dependency_info.bufferMemoryBarrierCount = 2;
-    barrier_dependency_info.pBufferMemoryBarriers = buffer_memory_barrier;
-
-    vulkan::vkCmdPipelineBarrier2(cmd, &barrier_dependency_info);
-
-
-    result = vulkan::vkEndCommandBuffer(cmd);
-    if (result)
-    {
-        logger::critical_error(logger::code::vkEndCommandBuffer_compute, result);
-    }
-
-
-    VkSemaphoreSubmitInfo wait_semaphore_info = {};
-    VkCommandBufferSubmitInfo cmd_buffer_submit_info = {};
-    VkSemaphoreSubmitInfo signal_semaphore_info = {};
-    VkSubmitInfo2 submit_info = {};
-
-    wait_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-    wait_semaphore_info.semaphore = frame->gpu_transfer_completed;
-    wait_semaphore_info.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
-
-    cmd_buffer_submit_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
-    cmd_buffer_submit_info.commandBuffer = cmd;
-
-    signal_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-    signal_semaphore_info.semaphore = frame->compute_completed;
-    signal_semaphore_info.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
-
-    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-    submit_info.waitSemaphoreInfoCount = 1;
-    submit_info.pWaitSemaphoreInfos = &wait_semaphore_info;
-    submit_info.commandBufferInfoCount = 1;
-    submit_info.pCommandBufferInfos = &cmd_buffer_submit_info;
-    submit_info.signalSemaphoreInfoCount = 1;
-    submit_info.pSignalSemaphoreInfos = &signal_semaphore_info;
-
-    renderer::lock_queue_mutex();
-    result = vulkan::vkQueueSubmit2(renderer::default_queue, 1, &submit_info, nullptr);
-    renderer::unlock_queue_mutex();
-
-    if (result)
-    {
-        logger::critical_error(logger::code::vkQueueSubmit2_compute, result);
-    }
-}
-
-
-static void begin_draw_to_swapchain_commands(renderer::frame_t *frame)
-{
-    const auto cmd = frame->draw_to_swapchain_cmd_buffer;
+    const auto cmd = frame->draw_cmd_buffer;
 
     VkCommandBufferBeginInfo command_buffer_begin_info = {};
     command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -333,231 +465,29 @@ static void begin_draw_to_swapchain_commands(renderer::frame_t *frame)
     {
         logger::critical_error(logger::code::vkBeginCommandBuffer_draw_to_swapchain, result);
     }
-
-
-    constexpr u32 attachment_image_barrier_count = 4;
-    VkImageMemoryBarrier2 attachment_image_barriers[attachment_image_barrier_count] = {};
-    VkDependencyInfo barrier_dependency_info = {};
-
-    barrier_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-    barrier_dependency_info.imageMemoryBarrierCount = attachment_image_barrier_count;
-    barrier_dependency_info.pImageMemoryBarriers = attachment_image_barriers;
-
-    attachment_image_barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    attachment_image_barriers[0].srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-    attachment_image_barriers[0].srcAccessMask = 0;
-    attachment_image_barriers[0].dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-    attachment_image_barriers[0].dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-    attachment_image_barriers[0].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachment_image_barriers[0].newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-    attachment_image_barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[0].image = renderer::swapchain_image_array[frame->acquired_swapchain_image_idx];
-    attachment_image_barriers[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    attachment_image_barriers[0].subresourceRange.levelCount = 1;
-    attachment_image_barriers[0].subresourceRange.layerCount = 1;
-
-    attachment_image_barriers[2].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    attachment_image_barriers[2].srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-    attachment_image_barriers[2].srcAccessMask = 0;
-    attachment_image_barriers[2].dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-    attachment_image_barriers[2].dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-    attachment_image_barriers[2].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachment_image_barriers[2].newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-    attachment_image_barriers[2].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[2].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[2].image = renderer::interaction_buffer_image;
-    attachment_image_barriers[2].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    attachment_image_barriers[2].subresourceRange.levelCount = 1;
-    attachment_image_barriers[2].subresourceRange.layerCount = 1;
-
-    attachment_image_barriers[3].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    attachment_image_barriers[3].srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-    attachment_image_barriers[3].srcAccessMask = 0;
-    attachment_image_barriers[3].dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-    attachment_image_barriers[3].dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-    attachment_image_barriers[3].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachment_image_barriers[3].newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-    attachment_image_barriers[3].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[3].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[3].image = renderer::normal_buffer_image;
-    attachment_image_barriers[3].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    attachment_image_barriers[3].subresourceRange.levelCount = 1;
-    attachment_image_barriers[3].subresourceRange.layerCount = 1;
-
-    attachment_image_barriers[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    attachment_image_barriers[1].srcStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-    attachment_image_barriers[1].srcAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
-    attachment_image_barriers[1].dstStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
-    attachment_image_barriers[1].dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    attachment_image_barriers[1].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachment_image_barriers[1].newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-    attachment_image_barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[1].image = renderer::depth_buffer_image;
-    attachment_image_barriers[1].subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    attachment_image_barriers[1].subresourceRange.levelCount = 1;
-    attachment_image_barriers[1].subresourceRange.layerCount = 1;
-
-    vulkan::vkCmdPipelineBarrier2(cmd, &barrier_dependency_info);
-
-
-    constexpr u32 color_attachment_count = 3;
-    VkRenderingAttachmentInfo color_attachment_info[color_attachment_count] = {};
-    VkRenderingAttachmentInfo depth_attachment_info = {};
-
-    color_attachment_info[0].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    color_attachment_info[0].imageView = renderer::swapchain_image_view_array[frame->acquired_swapchain_image_idx];
-    color_attachment_info[0].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-    color_attachment_info[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    color_attachment_info[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    color_attachment_info[0].clearValue.color.float32[0] = 0.39f;
-    color_attachment_info[0].clearValue.color.float32[1] = 0.58f;
-    color_attachment_info[0].clearValue.color.float32[2] = 0.93f;
-    color_attachment_info[0].clearValue.color.float32[3] = 1.0f;
-
-    color_attachment_info[1].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    color_attachment_info[1].imageView = renderer::interaction_buffer_image_view;
-    color_attachment_info[1].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-    color_attachment_info[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    color_attachment_info[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    color_attachment_info[1].clearValue.color.uint32[0] = 0xffffffff;
-
-    color_attachment_info[2].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    color_attachment_info[2].imageView = renderer::normal_buffer_image_view;
-    color_attachment_info[2].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-    color_attachment_info[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    color_attachment_info[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    color_attachment_info[2].clearValue.color.float32[0] = 0.0f;
-    color_attachment_info[2].clearValue.color.float32[1] = 0.0f;
-    color_attachment_info[2].clearValue.color.float32[2] = 0.0f;
-    color_attachment_info[2].clearValue.color.float32[3] = 0.0f;
-
-    depth_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    depth_attachment_info.imageView = renderer::depth_buffer_image_view;
-    depth_attachment_info.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-    depth_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    depth_attachment_info.clearValue.depthStencil.depth = 1.0f;
-
-    VkRenderingInfo rendering_info = {};
-    rendering_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-    rendering_info.renderArea.extent.width = renderer::window_width;
-    rendering_info.renderArea.extent.height = renderer::window_height;
-    rendering_info.layerCount = 1;
-    rendering_info.colorAttachmentCount = color_attachment_count;
-    rendering_info.pColorAttachments = color_attachment_info;
-    rendering_info.pDepthAttachment = &depth_attachment_info;
-
-    vulkan::vkCmdBeginRendering(cmd, &rendering_info);
-
-
-    VkRect2D scissor = {};
-    VkViewport viewport = {};
-
-    scissor.extent.width = renderer::window_width;
-    scissor.extent.height = renderer::window_height;
-    viewport.width = static_cast<f32>(renderer::window_width);
-    viewport.height = static_cast<f32>(renderer::window_height);
-    viewport.maxDepth = 1.0f;
-
-    vulkan::vkCmdSetViewport(cmd, 0, 1, &viewport);
-    vulkan::vkCmdSetScissor(cmd, 0, 1, &scissor);
-
-
-    auto pipeline = resource::pipeline::find(metadata::resource_package::mesh_outline_pipeline_id);
-    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
-    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, resource::pipeline_layout::draw_mesh::descriptor_count, frame->descriptor_set.draw_mesh_array, 0, nullptr);
-
-    auto mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
-    vulkan::vkCmdBindIndexBuffer(cmd, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT16);
-
-    vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 3, sizeof(resource::shader::mesh_indirect_draw_cmd_t));
-
-
-    pipeline = resource::pipeline::find(metadata::resource_package::draw_character_pipeline_id);
-    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
-    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, resource::pipeline_layout::draw_mesh::descriptor_count, frame->descriptor_set.draw_mesh_array, 0, nullptr);
-
-    mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
-    vulkan::vkCmdBindIndexBuffer(cmd, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT16);
-
-    vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 3, sizeof(resource::shader::mesh_indirect_draw_cmd_t));
 }
 
 
-static void submit_draw_to_swapchain_commands(renderer::frame_t *frame)
+static void submit_draw_commands(renderer::frame_t *frame)
 {
-    const auto cmd = frame->draw_to_swapchain_cmd_buffer;
-
-    vulkan::vkCmdEndRendering(cmd);
+    const auto cmd = frame->draw_cmd_buffer;
 
 
-    constexpr u32 attachment_image_barrier_count = 4;
+    constexpr u32 attachment_image_barrier_count = 1;
     VkImageMemoryBarrier2 attachment_image_barriers[attachment_image_barrier_count] = {};
-    VkDependencyInfo barrier_dependency_info = {};
+    VkDependencyInfo layout_transition_barrier_dependency_info = {};
 
-    barrier_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-    barrier_dependency_info.imageMemoryBarrierCount = attachment_image_barrier_count;
-    barrier_dependency_info.pImageMemoryBarriers = attachment_image_barriers;
+    layout_transition_barrier_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+    layout_transition_barrier_dependency_info.imageMemoryBarrierCount = attachment_image_barrier_count;
+    layout_transition_barrier_dependency_info.pImageMemoryBarriers = attachment_image_barriers;
 
-    attachment_image_barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    attachment_image_barriers[0].srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-    attachment_image_barriers[0].srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-    attachment_image_barriers[0].dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-    attachment_image_barriers[0].dstAccessMask = 0;
-    attachment_image_barriers[0].oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-    attachment_image_barriers[0].newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    attachment_image_barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[0].image = renderer::swapchain_image_array[frame->acquired_swapchain_image_idx];
-    attachment_image_barriers[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    attachment_image_barriers[0].subresourceRange.levelCount = 1;
-    attachment_image_barriers[0].subresourceRange.layerCount = 1;
+    resource::image::layout_transition(&attachment_image_barriers[0],
+                                       renderer::swapchain_image_array[frame->acquired_swapchain_image_idx], VK_IMAGE_ASPECT_COLOR_BIT,
+                                       VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0);
 
-    attachment_image_barriers[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    attachment_image_barriers[1].srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-    attachment_image_barriers[1].srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-    attachment_image_barriers[1].dstStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
-    attachment_image_barriers[1].dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
-    attachment_image_barriers[1].oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-    attachment_image_barriers[1].newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    attachment_image_barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[1].image = renderer::interaction_buffer_image;
-    attachment_image_barriers[1].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    attachment_image_barriers[1].subresourceRange.levelCount = 1;
-    attachment_image_barriers[1].subresourceRange.layerCount = 1;
-
-    attachment_image_barriers[3].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    attachment_image_barriers[3].srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-    attachment_image_barriers[3].srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-    attachment_image_barriers[3].dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-    attachment_image_barriers[3].dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
-    attachment_image_barriers[3].oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-    attachment_image_barriers[3].newLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
-    attachment_image_barriers[3].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[3].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[3].image = renderer::normal_buffer_image;
-    attachment_image_barriers[3].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    attachment_image_barriers[3].subresourceRange.levelCount = 1;
-    attachment_image_barriers[3].subresourceRange.layerCount = 1;
-
-    attachment_image_barriers[2].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    attachment_image_barriers[2].srcStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
-    attachment_image_barriers[2].srcAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    attachment_image_barriers[2].dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-    attachment_image_barriers[2].dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
-    attachment_image_barriers[2].oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-    attachment_image_barriers[2].newLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
-    attachment_image_barriers[2].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[2].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    attachment_image_barriers[2].image = renderer::depth_buffer_image;
-    attachment_image_barriers[2].subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    attachment_image_barriers[2].subresourceRange.levelCount = 1;
-    attachment_image_barriers[2].subresourceRange.layerCount = 1;
-
-    vulkan::vkCmdPipelineBarrier2(cmd, &barrier_dependency_info);
+    vulkan::vkCmdPipelineBarrier2(cmd, &layout_transition_barrier_dependency_info);
 
 
     auto result = vulkan::vkEndCommandBuffer(cmd);
@@ -578,7 +508,7 @@ static void submit_draw_to_swapchain_commands(renderer::frame_t *frame)
     wait_semaphore_info[0].stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
     wait_semaphore_info[1].sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
     wait_semaphore_info[1].semaphore = frame->compute_completed;
-    wait_semaphore_info[1].stageMask = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
+    wait_semaphore_info[1].stageMask = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
 
     cmd_buffer_submit_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
     cmd_buffer_submit_info.commandBuffer = cmd;
@@ -679,5 +609,147 @@ static void reset_fence(renderer::frame_t *frame)
 }
 
 
+static void readback_interaction_buffer(renderer::frame_t *frame)
+{
+    const auto gpu_transfer_work = frame->gpu_transfer_work;
+    const auto cmd = gpu_transfer_work->cmd_buffer;
+
+    constexpr u32 attachment_image_barrier_count = 1;
+    VkImageMemoryBarrier2 attachment_image_barriers[attachment_image_barrier_count] = {};
+    VkDependencyInfo layout_transition_barrier_dependency_info = {};
+
+    layout_transition_barrier_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+    layout_transition_barrier_dependency_info.imageMemoryBarrierCount = attachment_image_barrier_count;
+    layout_transition_barrier_dependency_info.pImageMemoryBarriers = attachment_image_barriers;
+
+    resource::image::layout_transition(&attachment_image_barriers[0],
+                                       renderer::interaction_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                       VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
+
+    vulkan::vkCmdPipelineBarrier2(cmd, &layout_transition_barrier_dependency_info);
 
 
+    resource::gpu_transfer_work_t::cmd_t transfer_cmd = {};
+    transfer_cmd.attachment_readback.dst = gpu_transfer_work->src_buffer;
+    transfer_cmd.attachment_readback.dst_offset = 0;
+    transfer_cmd.attachment_readback.src = renderer::interaction_buffer_image;
+    transfer_cmd.attachment_readback.src_x_offset = 0;
+    transfer_cmd.attachment_readback.src_y_offset = 0;
+    transfer_cmd.attachment_readback.src_width = 1;
+    transfer_cmd.attachment_readback.src_height = 1;
+    transfer_cmd.attachment_readback.src_size = sizeof(u32);
+    transfer_cmd.memory_barrier.stage_mask = VK_PIPELINE_STAGE_2_HOST_BIT;
+    transfer_cmd.memory_barrier.access_mask = VK_ACCESS_2_HOST_READ_BIT;
+    resource::gpu_transfer_work::read_attachment_cmd(gpu_transfer_work, &transfer_cmd);
+}
+
+
+static void begin_compute_commands(renderer::frame_t *frame)
+{
+    const auto cmd = frame->compute_cmd_buffer;
+
+    VkCommandBufferBeginInfo command_buffer_begin_info = {};
+    command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    command_buffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    auto result = vulkan::vkBeginCommandBuffer(cmd, &command_buffer_begin_info);
+    if (result)
+    {
+        logger::critical_error(logger::code::vkBeginCommandBuffer_compute, result);
+    }
+}
+
+
+static void cull_mesh_pass(renderer::frame_t *frame)
+{
+    const auto cmd = frame->compute_cmd_buffer;
+
+    resource::pipeline_layout::cull_mesh::push_constant_t cull_mesh_push_constant = {};
+    cull_mesh_push_constant.instance_count = 3;
+    cull_mesh_push_constant.indirect_draw_cmd_count = 3;
+
+    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, frame->pipeline.compute.cull_mesh);
+    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, frame->pipeline.compute.cull_mesh_layout, 0, resource::pipeline_layout::cull_mesh::descriptor_count, frame->descriptor_set.cull_mesh_array, 0, nullptr);
+    vulkan::vkCmdPushConstants(cmd, frame->pipeline.compute.cull_mesh_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(cull_mesh_push_constant), &cull_mesh_push_constant);
+    vulkan::vkCmdDispatch(cmd, (cull_mesh_push_constant.indirect_draw_cmd_count + frame->pipeline.compute.wave_size - 1) / frame->pipeline.compute.wave_size, 1, 1);
+
+    VkBufferMemoryBarrier2 buffer_memory_barrier[2] = {};
+    VkDependencyInfo barrier_dependency_info = {};
+
+    buffer_memory_barrier[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+    buffer_memory_barrier[0].srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    buffer_memory_barrier[0].srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+    buffer_memory_barrier[0].dstStageMask = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+    buffer_memory_barrier[0].dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+    buffer_memory_barrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    buffer_memory_barrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    buffer_memory_barrier[0].buffer = frame->data_buffer;
+    buffer_memory_barrier[0].offset = frame->data_offset.mesh_instance_indices;
+    buffer_memory_barrier[0].size = sizeof(resource::shader::mesh_instance_index_t) * cull_mesh_push_constant.instance_count;
+
+    buffer_memory_barrier[1].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+    buffer_memory_barrier[1].srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    buffer_memory_barrier[1].srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+    buffer_memory_barrier[1].dstStageMask = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
+    buffer_memory_barrier[1].dstAccessMask = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
+    buffer_memory_barrier[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    buffer_memory_barrier[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    buffer_memory_barrier[1].buffer = frame->data_buffer;
+    buffer_memory_barrier[1].offset = frame->data_offset.mesh_indirect_draw_cmds;
+    buffer_memory_barrier[1].size = sizeof(resource::shader::mesh_indirect_draw_cmd_t) * cull_mesh_push_constant.indirect_draw_cmd_count;
+
+    barrier_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+    barrier_dependency_info.bufferMemoryBarrierCount = 2;
+    barrier_dependency_info.pBufferMemoryBarriers = buffer_memory_barrier;
+
+    vulkan::vkCmdPipelineBarrier2(cmd, &barrier_dependency_info);
+}
+
+
+static void submit_compute_commands(renderer::frame_t *frame)
+{
+    const auto cmd = frame->compute_cmd_buffer;
+
+
+    VkResult result = vulkan::vkEndCommandBuffer(cmd);
+    if (result)
+    {
+        logger::critical_error(logger::code::vkEndCommandBuffer_compute, result);
+    }
+
+
+    VkSemaphoreSubmitInfo wait_semaphore_info = {};
+    VkCommandBufferSubmitInfo cmd_buffer_submit_info = {};
+    VkSemaphoreSubmitInfo signal_semaphore_info = {};
+    VkSubmitInfo2 submit_info = {};
+
+    wait_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+    wait_semaphore_info.semaphore = frame->gpu_transfer_completed;
+    wait_semaphore_info.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+
+    cmd_buffer_submit_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+    cmd_buffer_submit_info.commandBuffer = cmd;
+
+    signal_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+    signal_semaphore_info.semaphore = frame->compute_completed;
+    signal_semaphore_info.stageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+    submit_info.waitSemaphoreInfoCount = 1;
+    submit_info.pWaitSemaphoreInfos = &wait_semaphore_info;
+    submit_info.commandBufferInfoCount = 1;
+    submit_info.pCommandBufferInfos = &cmd_buffer_submit_info;
+    submit_info.signalSemaphoreInfoCount = 1;
+    submit_info.pSignalSemaphoreInfos = &signal_semaphore_info;
+
+    renderer::lock_queue_mutex();
+    result = vulkan::vkQueueSubmit2(renderer::default_queue, 1, &submit_info, nullptr);
+    renderer::unlock_queue_mutex();
+
+    if (result)
+    {
+        logger::critical_error(logger::code::vkQueueSubmit2_compute, result);
+    }
+}

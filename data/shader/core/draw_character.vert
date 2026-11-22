@@ -4,10 +4,12 @@
 #define mesh_data_descriptor
 #include "types.glsl"
 
+
 frame_uniform(0, 0, readonly)
 mesh_vertex_ssbo_array(1, 0, readonly)
 mesh_instance_index_ssbo(1, 1, readonly)
 mesh_instance_ssbo(1, 2, readonly)
+
 
 layout(location = 0) out uint out_material_idx;
 layout(location = 1) out uint out_interaction_id;
@@ -15,10 +17,12 @@ layout(location = 2) out vec3 out_world_position;
 layout(location = 3) out vec3 out_world_normal;
 layout(location = 4) out vec3 out_view_normal;
 
+
 out gl_PerVertex
 {
 	vec4 gl_Position;
 };
+
 
 void main()
 {

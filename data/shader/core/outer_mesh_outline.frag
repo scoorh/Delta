@@ -4,12 +4,16 @@
 #define mesh_data_descriptor
 #include "types.glsl"
 
+
 frame_uniform(0, 0, readonly)
 material_ssbo(1, 3, readonly)
 
+
 layout(location = 0) in flat uint in_material_idx;
 
+
 layout(location = 0) out vec4 out_color_buffer;
+
 
 void main()
 {

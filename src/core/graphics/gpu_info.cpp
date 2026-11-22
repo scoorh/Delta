@@ -72,12 +72,15 @@ static b8 validate(const gpu_info::aggregate_t *t)
     if (t->format.depth_buffer == VK_FORMAT_UNDEFINED) return false;
     if (t->format.interaction_buffer == VK_FORMAT_UNDEFINED) return false;
     if (t->format.normal_buffer == VK_FORMAT_UNDEFINED) return false;
+    if (t->format.color_buffer == VK_FORMAT_UNDEFINED) return false;
 
     if (t->memory.device_local_type_bits == 0) return false;
 
     if (t->queue.default_family_idx == gpu_info::invalid_queue_family_idx) return false;
 
     if (t->swapchain.format == VK_FORMAT_UNDEFINED) return false;
+    //TODO:  need to perform linear-to-sRGB in tone mapping shader  if format is different than below
+    if (t->swapchain.format != VK_FORMAT_B8G8R8A8_SRGB) return false;
 
     return true;
 }
@@ -199,10 +202,13 @@ static void get_formats(gpu_info::aggregate_t *t)
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_D24_UNORM_S8_UINT, &t->format.D24_UNORM_S8_UINT);
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R32_UINT, &t->format.R32_UINT);
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R16G16_SNORM, &t->format.R16G16_SNORM);
+    vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R8G8B8A8_UNORM, &t->format.R8G8B8A8_UNORM);
+    vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R16G16B16A16_SFLOAT, &t->format.R16G16B16A16_SFLOAT);
 
     t->format.depth_buffer = VK_FORMAT_UNDEFINED;
     t->format.interaction_buffer = VK_FORMAT_UNDEFINED;
     t->format.normal_buffer = VK_FORMAT_UNDEFINED;
+    t->format.color_buffer = VK_FORMAT_UNDEFINED;
 
     if (t->format.D32_SFLOAT.optimalTilingFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
     {
@@ -225,6 +231,11 @@ static void get_formats(gpu_info::aggregate_t *t)
     if (t->format.R16G16_SNORM.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
     {
         t->format.normal_buffer = VK_FORMAT_R16G16_SNORM;
+    }
+
+    if (t->format.R16G16B16A16_SFLOAT.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
+    {
+        t->format.color_buffer = VK_FORMAT_R16G16B16A16_SFLOAT;
     }
 }
 

@@ -80,7 +80,7 @@ namespace resource::gpu_transfer_work
         work->used_memory = 0;
         vulkan::vkResetCommandPool(renderer::device, work->default_cmd_pool, 0);
 
-        const auto cmd = work->transfer_cmd_buffer;
+        const auto cmd = work->cmd_buffer;
 
         VkCommandBufferBeginInfo command_buffer_begin_info = {};
         command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -99,7 +99,7 @@ namespace resource::gpu_transfer_work
 
     b8 submit(gpu_transfer_work_t *work, VkSemaphore wait_for_semaphore, b8 signal_semaphore)
     {
-        const auto cmd = work->transfer_cmd_buffer;
+        const auto cmd = work->cmd_buffer;
 
         auto result = vulkan::vkEndCommandBuffer(cmd);
         if (result)
@@ -149,7 +149,7 @@ namespace resource::gpu_transfer_work
 
     void send_buffer_cmd(gpu_transfer_work_t *work, const gpu_transfer_work_t::cmd_t *cmd)
     {
-        const auto cmd_buffer = work->transfer_cmd_buffer;
+        const auto cmd_buffer = work->cmd_buffer;
 
         work->used_memory += cmd->buffer.src_size;
 
@@ -171,28 +171,25 @@ namespace resource::gpu_transfer_work
         vulkan::vkCmdCopyBuffer2(cmd_buffer, &buffer_copy_info);
 
 
-        if (cmd->memory_barrier.access_mask != VK_ACCESS_NONE)
-        {
-            VkBufferMemoryBarrier2 buffer_memory_barrier = {};
-            VkDependencyInfo barrier_dependency_info = {};
+        VkBufferMemoryBarrier2 buffer_memory_barrier = {};
+        VkDependencyInfo barrier_dependency_info = {};
 
-            buffer_memory_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
-            buffer_memory_barrier.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
-            buffer_memory_barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-            buffer_memory_barrier.dstStageMask = cmd->memory_barrier.stage_mask;
-            buffer_memory_barrier.dstAccessMask = cmd->memory_barrier.access_mask;
-            buffer_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            buffer_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            buffer_memory_barrier.buffer = cmd->buffer.dst;
-            buffer_memory_barrier.offset = cmd->buffer.dst_offset;
-            buffer_memory_barrier.size = cmd->buffer.src_size;
+        buffer_memory_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+        buffer_memory_barrier.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
+        buffer_memory_barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+        buffer_memory_barrier.dstStageMask = cmd->memory_barrier.stage_mask;
+        buffer_memory_barrier.dstAccessMask = cmd->memory_barrier.access_mask;
+        buffer_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        buffer_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        buffer_memory_barrier.buffer = cmd->buffer.dst;
+        buffer_memory_barrier.offset = cmd->buffer.dst_offset;
+        buffer_memory_barrier.size = cmd->buffer.src_size;
 
-            barrier_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-            barrier_dependency_info.bufferMemoryBarrierCount = 1;
-            barrier_dependency_info.pBufferMemoryBarriers = &buffer_memory_barrier;
+        barrier_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+        barrier_dependency_info.bufferMemoryBarrierCount = 1;
+        barrier_dependency_info.pBufferMemoryBarriers = &buffer_memory_barrier;
 
-            vulkan::vkCmdPipelineBarrier2(cmd_buffer, &barrier_dependency_info);
-        }
+        vulkan::vkCmdPipelineBarrier2(cmd_buffer, &barrier_dependency_info);
     }
 
 
@@ -203,6 +200,44 @@ namespace resource::gpu_transfer_work
 
     void read_attachment_cmd(gpu_transfer_work_t *work, const gpu_transfer_work_t::cmd_t *cmd)
     {
+        const auto cmd_buffer = work->cmd_buffer;
+
+        work->used_memory += cmd->attachment_readback.src_size;
+
+
+        VkBufferImageCopy copy_region = {};
+
+        copy_region.bufferOffset = cmd->attachment_readback.dst_offset;
+        copy_region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        copy_region.imageSubresource.layerCount = 1;
+        copy_region.imageOffset.x = cmd->attachment_readback.src_x_offset;
+        copy_region.imageOffset.y = cmd->attachment_readback.src_y_offset;
+        copy_region.imageExtent.width = cmd->attachment_readback.src_width;
+        copy_region.imageExtent.height = cmd->attachment_readback.src_height;
+        copy_region.imageExtent.depth = 1;
+
+        vulkan::vkCmdCopyImageToBuffer(cmd_buffer, cmd->attachment_readback.src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, cmd->attachment_readback.dst, 1, &copy_region);
+
+
+        VkBufferMemoryBarrier2 buffer_memory_barrier = {};
+        VkDependencyInfo barrier_dependency_info = {};
+
+        buffer_memory_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+        buffer_memory_barrier.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        buffer_memory_barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+        buffer_memory_barrier.dstStageMask = cmd->memory_barrier.stage_mask;
+        buffer_memory_barrier.dstAccessMask = cmd->memory_barrier.access_mask;
+        buffer_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        buffer_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        buffer_memory_barrier.buffer = cmd->attachment_readback.dst;
+        buffer_memory_barrier.offset = cmd->attachment_readback.dst_offset;
+        buffer_memory_barrier.size = cmd->attachment_readback.src_size;
+
+        barrier_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+        barrier_dependency_info.bufferMemoryBarrierCount = 1;
+        barrier_dependency_info.pBufferMemoryBarriers = &buffer_memory_barrier;
+
+        vulkan::vkCmdPipelineBarrier2(cmd_buffer, &barrier_dependency_info);
     }
 }
 
@@ -283,7 +318,7 @@ static void create_cmd_buffers(const u32 work_idx)
     buffer_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     buffer_alloc_info.commandBufferCount = 1;
 
-    constexpr u32 command_buffer_count = 2;
+    constexpr u32 command_buffer_count = 1;
     struct
     {
         VkCommandPool commandPool;
@@ -291,9 +326,8 @@ static void create_cmd_buffers(const u32 work_idx)
     } dst[command_buffer_count];
 
     dst[0].commandPool = resource::gpu_transfer_works[work_idx].default_cmd_pool;
-    dst[0].dst = &resource::gpu_transfer_works[work_idx].transfer_cmd_buffer;
-    dst[1].commandPool = resource::gpu_transfer_works[work_idx].default_cmd_pool;
-    dst[1].dst = &resource::gpu_transfer_works[work_idx].readback_cmd_buffer;
+    dst[0].dst = &resource::gpu_transfer_works[work_idx].cmd_buffer;
+
 
     for (u32 i = 0; i < command_buffer_count; ++i)
     {

@@ -171,6 +171,7 @@ static void get_functions()
     vulkan::vkResetCommandPool = get_vulkan_device_function(vkResetCommandPool);
     vulkan::vkBeginCommandBuffer = get_vulkan_device_function(vkBeginCommandBuffer);
     vulkan::vkCmdCopyBuffer2 = get_vulkan_device_function(vkCmdCopyBuffer2);
+    vulkan::vkCmdCopyImageToBuffer = get_vulkan_device_function(vkCmdCopyImageToBuffer);
     vulkan::vkCmdPipelineBarrier2 = get_vulkan_device_function(vkCmdPipelineBarrier2);
     vulkan::vkCmdBeginRendering = get_vulkan_device_function(vkCmdBeginRendering);
     vulkan::vkCmdSetViewport = get_vulkan_device_function(vkCmdSetViewport);

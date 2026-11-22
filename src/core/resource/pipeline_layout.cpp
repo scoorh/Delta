@@ -4,6 +4,7 @@
 static void create_cull_mesh();
 static void create_draw_mesh();
 static void create_draw_ui();
+static void create_post_process();
 
 
 namespace resource::pipeline_layout
@@ -13,6 +14,7 @@ namespace resource::pipeline_layout
         create_cull_mesh();
         create_draw_mesh();
         create_draw_ui();
+        create_post_process();
     }
 }
 
@@ -89,5 +91,35 @@ static void create_draw_ui()
     if (result)
     {
         logger::critical_error(logger::code::vkCreatePipelineLayout_draw_ui, result);
+    }
+}
+
+
+static void create_post_process()
+{
+    constexpr u32 descriptor_set_count = resource::pipeline_layout::post_process::descriptor_count;
+
+    VkDescriptorSetLayout descriptor_sets[descriptor_set_count];
+    VkPipelineLayoutCreateInfo layout_create_info = {};
+    constexpr u32 push_constant_range_count = 1;
+    VkPushConstantRange push_constant_ranges[push_constant_range_count];
+
+    descriptor_sets[resource::pipeline_layout::post_process::frame_data_descriptor_idx] = resource::descriptor_set_layouts.frame_data;
+    descriptor_sets[resource::pipeline_layout::post_process::image_data_descriptor_idx] = resource::descriptor_set_layouts.image_data;
+
+    push_constant_ranges[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    push_constant_ranges[0].offset = 0;
+    push_constant_ranges[0].size = sizeof(resource::pipeline_layout::post_process::push_constant_t);
+
+    layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    layout_create_info.setLayoutCount = descriptor_set_count;
+    layout_create_info.pSetLayouts = descriptor_sets;
+    layout_create_info.pPushConstantRanges = push_constant_ranges;
+    layout_create_info.pushConstantRangeCount = push_constant_range_count;
+
+    const auto result = vulkan::vkCreatePipelineLayout(renderer::device, &layout_create_info, nullptr, &resource::pipeline_layouts.post_process);
+    if (result)
+    {
+        logger::critical_error(logger::code::vkCreatePipelineLayout_post_process, result);
     }
 }

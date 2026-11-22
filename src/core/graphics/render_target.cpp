@@ -144,4 +144,18 @@ static void create_other_attachments()
     }
     renderer::normal_buffer_image = image->handle;
     renderer::normal_buffer_image_view = image->view;
+
+
+    image_setup.id = resource::color_buffer_image_id;
+    image_setup.format = gpu_info::format->color_buffer;
+    image_setup.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    image_setup.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+
+    image = resource::image::create(&image_setup);
+    if (nullptr == image)
+    {
+        logger::critical_error(logger::code::create_color_buffer, 0);
+    }
+    renderer::color_buffer_image = image->handle;
+    renderer::color_buffer_image_view = image->view;
 }

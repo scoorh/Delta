@@ -42,6 +42,19 @@ namespace resource
 
             math::vector4_t global_light_direction;
             math::vector4_t camera_position;
+
+            union
+            {
+                math::vector4_t packed1;
+
+                struct
+                {
+                    f32 camera_near_z;
+                    f32 camera_far_z;
+                    f32 _pad0;
+                    f32 _pad1;
+                };
+            };
         };
 
         static_assert(sizeof(frame_uniform_t) % 16 == 0);
@@ -339,7 +352,7 @@ namespace resource
     // ==================================================
     namespace pipeline_layout
     {
-        constexpr u32 count = 3;
+        constexpr u32 count = 4;
 
 
         // ==================================================
@@ -390,6 +403,42 @@ namespace resource
             constexpr u32 mesh_data_descriptor_idx = 1;
             constexpr u32 image_data_descriptor_idx = 2;
         }
+
+
+        // ==================================================
+        // draw mesh
+        // ==================================================
+        namespace post_process
+        {
+            constexpr u32 idx = 3;
+
+            constexpr u32 descriptor_count = 2;
+
+            constexpr u32 frame_data_descriptor_idx = 0;
+            constexpr u32 image_data_descriptor_idx = 1;
+
+            struct push_constant_t
+            {
+                u32 color_buffer_image_idx;
+                u32 color_buffer_sampler_idx;
+                u32 normal_buffer_image_idx;
+                u32 normal_buffer_sampler_idx;
+                u32 depth_buffer_image_idx;
+                u32 depth_buffer_sampler_idx;
+                union
+                {
+                    struct
+                    {
+                        f32 exposure;
+                        f32 normal_threshold;
+                        f32 normal_softness;
+                        f32 depth_threshold;
+                        f32 depth_softness;
+                        f32 outline_strength;
+                    } inner_mesh_outline_and_tonemap;
+                };
+            };
+        }
     }
 
 
@@ -400,6 +449,7 @@ namespace resource
             VkPipelineLayout draw_ui;
             VkPipelineLayout cull_mesh;
             VkPipelineLayout draw_mesh;
+            VkPipelineLayout post_process;
         };
 
         VkPipelineLayout array[pipeline_layout::count];

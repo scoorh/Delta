@@ -4,17 +4,21 @@
 #define mesh_data_descriptor
 #include "types.glsl"
 
+
 frame_uniform(0, 0, readonly)
 mesh_vertex_ssbo_array(1, 0, readonly)
 mesh_instance_index_ssbo(1, 1, readonly)
 mesh_instance_ssbo(1, 2, readonly)
 
+
 layout(location = 0) out uint out_material_idx;
+
 
 out gl_PerVertex
 {
 	vec4 gl_Position;
 };
+
 
 void main()
 {

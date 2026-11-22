@@ -62,6 +62,8 @@ namespace file::resource_package
     b8 load_all_images(const resource_package_t* f);
     b8 load_all_image_samplers(const resource_package_t* f);
     b8 load_all_materials(const resource_package_t* f);
+
+    void validate_core_package_load();
 }
 
 
@@ -74,13 +76,4 @@ namespace file::base
     void close(base_t *f);
     void move_pointer(const base_t *f, u32 offset);
     void read_binary(const base_t *f, void *ptr, u32 size);
-}
-
-
-// ==================================================
-// resource package functions
-// ==================================================
-namespace file::resource_package
-{
-
 }
