@@ -30,10 +30,16 @@ void main()
 
     float NdotL = max(dot(N, L), 0.0);
 
-    //vec4 color = color_vec4(in_material_idx);
-    vec4 color = vec4(NdotL, NdotL, NdotL, 1.0);
+    float width = max(fwidth(NdotL) * 0.5, shadow_softness(in_material_idx));
+    float toon = smoothstep(shadow_threshold(in_material_idx) - width * 0.5, shadow_threshold(in_material_idx) + width, NdotL);
+    float brightness = mix(0.55, 1.0, toon);
 
-    out_color_buffer = color;
+    vec4 color = color_vec4(in_material_idx);
+    vec4 shadow_tint = shadow_tint_vec4(in_material_idx);
+
+    vec4 final_color = mix(color * shadow_tint, color, toon);
+
+    out_color_buffer = vec4(final_color.rgb, 1.0);
     out_interaction_buffer = in_interaction_id;
     out_normal_buffer = encode_octahedral_normal(normalize(in_view_normal));
 }

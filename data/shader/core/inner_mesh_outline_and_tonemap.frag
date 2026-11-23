@@ -46,9 +46,10 @@ void main()
     float edge = 1.0;
 
 
-    vec3 color = aces_tonemap(hdr_color * exposure);
+    vec3 color = hdr_color;
+    //vec3 color = aces_tonemap(hdr_color * exposure);
 
-    color *= 1.0 - clamp(edge * outline_strength, 0.0, 1.0);
+    //color *= 1.0 - clamp(edge * outline_strength, 0.0, 1.0);
 
     out_color_buffer = vec4(color, 1.0);
 }

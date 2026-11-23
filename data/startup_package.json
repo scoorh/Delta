@@ -54,10 +54,47 @@
     {
       "id": "metadata::resource_package::default_character_body_material_id",
       "color": {
-        "r": 255,
-        "g": 255,
-        "b": 0
-      }
+        "r": 232,
+        "g": 203,
+        "b": 188
+      },
+      "shadow_tint": {
+        "r": 235,
+        "g": 197,
+        "b": 181
+      },
+      "shadow_threshold": 0.45,
+      "shadow_softness": 0.01
+    },
+    {
+      "id": "metadata::resource_package::default_character_clothes_material_id",
+      "color": {
+        "r": 247,
+        "g": 246,
+        "b": 242
+      },
+      "shadow_tint": {
+        "r": 183,
+        "g": 167,
+        "b": 198
+      },
+      "shadow_threshold": 0.50,
+      "shadow_softness": 0.01
+    },
+    {
+      "id": "metadata::resource_package::default_character_hair_material_id",
+      "color": {
+        "r": 228,
+        "g": 188,
+        "b": 139
+      },
+      "shadow_tint": {
+        "r": 166,
+        "g": 122,
+        "b": 75
+      },
+      "shadow_threshold": 0.40,
+      "shadow_softness": 0.015
     }
   ],
 

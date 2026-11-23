@@ -67,6 +67,23 @@ def pack_color(color: dict) -> int:
     return ((r << 24) | (g << 16) | (b << 8) | a)
 
 
+def srgb_to_linear(value: int) -> float:
+    c = value / 255.0
+
+    if c <= 0.04045:
+        return c / 12.92
+
+    return ((c + 0.055) / 1.055) ** 2.4
+
+
+def pack_linear_color(color: dict) -> bytes:
+    r = srgb_to_linear(color["r"])
+    g = srgb_to_linear(color["g"])
+    b = srgb_to_linear(color["b"])
+    a = color.get("a", 255) / 255.0
+    return struct.pack("<4e", r, g, b, a)
+
+
 
 mesh_data_skip_size = 20
 
@@ -179,10 +196,17 @@ def process_material_setups(array, output_file):
     for element in array:
         id = get_value(element, "id", 0, 1)
         color = get_value(element, "color", default_color, 0)
+        shadow_tint = get_value(element, "shadow_tint", default_color, 0)
+        shadow_threshold = get_value(element, "shadow_threshold", 0.5, 0)
+        shadow_softness = get_value(element, "shadow_softness", 0.01, 0)
 
         output_file.write(struct.pack('<H', id)) #2
         output_file.write(struct.pack('<H', 65535)) #4
-        output_file.write(struct.pack('<I', pack_color(color))) #8
+        output_file.write(pack_linear_color(color)) #12
+        output_file.write(pack_linear_color(shadow_tint)) #20
+        output_file.write(struct.pack('<f', shadow_threshold)) #24
+        output_file.write(struct.pack('<f', shadow_softness)) #28
+
 
     return
 

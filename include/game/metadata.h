@@ -38,4 +38,6 @@ namespace metadata::resource_package
     // material
     // ==================================================
     constexpr u32 default_character_body_material_id = 1;
+    constexpr u32 default_character_clothes_material_id = 2;
+    constexpr u32 default_character_hair_material_id = 3;
 }

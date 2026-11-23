@@ -22,6 +22,9 @@ namespace resource::material
 
 
         material->color = setup->color;
+        material->shadow_tint = setup->shadow_tint;
+        material->shadow_threshold = setup->shadow_threshold;
+        material->shadow_softness = setup->shadow_softness;
         material->descriptor_index = (u16) memory::resource_pool::get_index(&materials, material);
 
 

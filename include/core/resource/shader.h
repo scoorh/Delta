@@ -65,10 +65,12 @@ namespace resource
         // ==================================================
         struct material_t
         {
-            u32 color;
+            math::linear_color_t color;
+            math::linear_color_t shadow_tint;
+            f32 shadow_threshold;
+            f32 shadow_softness;
             u32 _pad0;
             u32 _pad1;
-            u32 _pad2;
         };
 
         static_assert(sizeof(material_t) % 16 == 0);

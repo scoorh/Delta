@@ -92,18 +92,29 @@ layout(set = _set_, binding = _binding_) buffer _access_ mesh_vertex_ssbo_array_
 #ifdef mesh_data_descriptor
 #define material_ssbo(_set_, _binding_, _access_) \
 struct material_t { \
-    uint color; \
+    uvec2 color; \
+    uvec2 shadow_tint; \
+    float shadow_threshold; \
+    float shadow_softness; \
+    uint _pad0; \
+    uint _pad1; \
 }; \
 layout(set = _set_, binding = _binding_) buffer _access_ material_ssbo_t { \
     material_t array[]; \
 } _material_ssbo;
 
 
+#define shadow_threshold(material_idx) _material_ssbo.array[material_idx].shadow_threshold
+#define shadow_softness(material_idx) _material_ssbo.array[material_idx].shadow_softness
+
 #define color_vec4(material_idx) \
-    vec4(float((_material_ssbo.array[material_idx].color >> 24u) & 0xFFu), \
-         float((_material_ssbo.array[material_idx].color >> 16u) & 0xFFu), \
-         float((_material_ssbo.array[material_idx].color >>  8u) & 0xFFu), \
-         float( _material_ssbo.array[material_idx].color        & 0xFFu)) * inverse_255
+    vec4(unpackHalf2x16(_material_ssbo.array[material_idx].color.x), \
+         unpackHalf2x16(_material_ssbo.array[material_idx].color.y))
+
+ #define shadow_tint_vec4(material_idx) \
+     vec4(unpackHalf2x16(_material_ssbo.array[material_idx].shadow_tint.x), \
+          unpackHalf2x16(_material_ssbo.array[material_idx].shadow_tint.y))
+
 
 #endif
 

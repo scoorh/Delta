@@ -359,14 +359,20 @@ static void transfer_frame_uniform(renderer::frame_t *frame)
     auto hair_mesh = resource::mesh::find(metadata::resource_package::hair_mesh_id);
     auto clothes_mesh = resource::mesh::find(metadata::resource_package::clothes_mesh_id);
 
+    auto body_material = resource::material::find(metadata::resource_package::default_character_body_material_id);
+    auto hair_material = resource::material::find(metadata::resource_package::default_character_hair_material_id);
+    auto clothes_material = resource::material::find(metadata::resource_package::default_character_clothes_material_id);
+
     mesh_instance[0].position_vertex_ssbo_idx = body_mesh->position_vertex_ssbo_idx;
     mesh_instance[0].attribute_vertex_ssbo_idx = body_mesh->attribute_vertex_ssbo_idx;
-    mesh_instance[0].material_idx = 0;
+    mesh_instance[0].material_idx = body_material->descriptor_index;
     mesh_instance[0].interaction_id = 0;
     mesh_instance[0].outline_pixel_size = 1;
 
     mesh_instance[1] = mesh_instance[0];
+    mesh_instance[1].material_idx = hair_material->descriptor_index;
     mesh_instance[2] = mesh_instance[0];
+    mesh_instance[2].material_idx = clothes_material->descriptor_index;
 
 
     math::matrix4x4::world_transform(&m, 0.0f, 8.1184f / 2.0f, -0.023793f / 2.0f, 0.5f, &q);

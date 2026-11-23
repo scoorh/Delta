@@ -212,7 +212,10 @@ namespace resource
         {
             u16 id;
             u16 _pad0;
-            u32 color;
+            math::linear_color_t color;
+            math::linear_color_t shadow_tint;
+            f32 shadow_threshold;
+            f32 shadow_softness;
         };
 
         static_assert(offsetof(setup_t, id) == 0);
@@ -222,7 +225,10 @@ namespace resource
 
     struct material_t
     {
-        u32 color;
+        math::linear_color_t color;
+        math::linear_color_t shadow_tint;
+        f32 shadow_threshold;
+        f32 shadow_softness;
         u16 descriptor_index;
     };
 
