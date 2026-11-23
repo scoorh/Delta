@@ -40,6 +40,9 @@ layout(std140, set = _set_, binding = _binding_) uniform _access_ frame_uniform_
 #define image_array(_set_, _binding_) \
 layout(set = _set_, binding = _binding_) uniform texture2D images[];
 
+#define uimage_array(_set_, _binding_) \
+layout(set = _set_, binding = _binding_) uniform utexture2D uimages[];
+
 #define sampler_array(_set_, _binding_) \
 layout(set = _set_, binding = _binding_) uniform sampler samplers[];
 #endif
@@ -96,8 +99,8 @@ struct material_t { \
     uvec2 shadow_tint; \
     float shadow_threshold; \
     float shadow_softness; \
+    uint packed1; \
     uint _pad0; \
-    uint _pad1; \
 }; \
 layout(set = _set_, binding = _binding_) buffer _access_ material_ssbo_t { \
     material_t array[]; \
@@ -106,6 +109,8 @@ layout(set = _set_, binding = _binding_) buffer _access_ material_ssbo_t { \
 
 #define shadow_threshold(material_idx) _material_ssbo.array[material_idx].shadow_threshold
 #define shadow_softness(material_idx) _material_ssbo.array[material_idx].shadow_softness
+#define outline_group(material_idx) (_material_ssbo.array[material_idx].packed1 & 0x0000ffffu)
+#define outline_priority(material_idx) ((_material_ssbo.array[material_idx].packed1 & 0xffff0000u) >> 16)
 
 #define color_vec4(material_idx) \
     vec4(unpackHalf2x16(_material_ssbo.array[material_idx].color.x), \
@@ -230,4 +235,10 @@ float linearize_depth(float depth, float near_z, float far_z)
 {
     return (near_z * far_z) /
            (far_z - depth * (far_z - near_z));
+}
+
+
+ivec2 clamp_pixel(ivec2 p, ivec2 s)
+{
+    return clamp(p, ivec2(0), s - ivec2(1));
 }

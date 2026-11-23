@@ -102,7 +102,8 @@
       "depth_write_enabled": 1,
       "write_to_interaction_buffer": 1,
       "write_to_color_buffer": 1,
-      "write_to_normal_buffer": 1
+      "write_to_normal_buffer": 1,
+      "write_to_material_buffer": 1
     }
   ]
 }

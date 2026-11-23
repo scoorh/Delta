@@ -69,8 +69,17 @@ namespace resource
             math::linear_color_t shadow_tint;
             f32 shadow_threshold;
             f32 shadow_softness;
+
+            union
+            {
+                u32 packed1;
+                struct
+                {
+                    u16 outline_group;
+                    u16 outline_priority;
+                };
+            };
             u32 _pad0;
-            u32 _pad1;
         };
 
         static_assert(sizeof(material_t) % 16 == 0);
@@ -414,10 +423,11 @@ namespace resource
         {
             constexpr u32 idx = 3;
 
-            constexpr u32 descriptor_count = 2;
+            constexpr u32 descriptor_count = 3;
 
             constexpr u32 frame_data_descriptor_idx = 0;
-            constexpr u32 image_data_descriptor_idx = 1;
+            constexpr u32 mesh_data_descriptor_idx = 1;
+            constexpr u32 image_data_descriptor_idx = 2;
 
             struct push_constant_t
             {
@@ -427,15 +437,15 @@ namespace resource
                 u32 normal_buffer_sampler_idx;
                 u32 depth_buffer_image_idx;
                 u32 depth_buffer_sampler_idx;
+                u32 material_buffer_image_idx;
+                u32 material_buffer_sampler_idx;
                 union
                 {
                     struct
                     {
                         f32 exposure;
                         f32 normal_threshold;
-                        f32 normal_softness;
                         f32 depth_threshold;
-                        f32 depth_softness;
                         f32 outline_strength;
                     } inner_mesh_outline_and_tonemap;
                 };

@@ -31,10 +31,12 @@ namespace renderer
     inline VkImage swapchain_image_array[max_swapchain_image_count] = {};
     inline VkImageView swapchain_image_view_array[max_swapchain_image_count] = {};
     inline VkImage color_buffer_image = nullptr;
+    inline VkImage material_buffer_image = nullptr;
     inline VkImage interaction_buffer_image = nullptr;
     inline VkImage normal_buffer_image = nullptr;
     inline VkImage depth_buffer_image = nullptr;
-    inline VkImageView color_buffer_image_view = nullptr;;
+    inline VkImageView color_buffer_image_view = nullptr;
+    inline VkImageView material_buffer_image_view = nullptr;
     inline VkImageView interaction_buffer_image_view = nullptr;
     inline VkImageView normal_buffer_image_view = nullptr;
     inline VkImageView depth_buffer_image_view = nullptr;

@@ -36,11 +36,13 @@ namespace gpu_info
         VkFormat interaction_buffer;
         VkFormat normal_buffer;
         VkFormat color_buffer;
+        VkFormat material_buffer;
 
         VkFormatProperties R8G8B8A8_UNORM;
         VkFormatProperties R16G16B16A16_SFLOAT;
         VkFormatProperties R16G16_SNORM;
         VkFormatProperties R32_UINT;
+        VkFormatProperties R16_UINT;
         VkFormatProperties D32_SFLOAT;
         VkFormatProperties D32_SFLOAT_S8_UINT;
         VkFormatProperties D24_UNORM_S8_UINT;

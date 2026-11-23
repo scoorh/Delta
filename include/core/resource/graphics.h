@@ -12,6 +12,7 @@ namespace resource
     constexpr u16 depth_buffer_image_id = 65001;
     constexpr u16 normal_buffer_image_id = 65002;
     constexpr u16 color_buffer_image_id = 65003;
+    constexpr u16 material_buffer_image_id = 65004;
     constexpr u16 frame_data_buffer_id = 65000;
     constexpr u16 frame_data_buffer_id_N = 65005;
     constexpr u16 gpu_transfer_work_staging_buffer_id = 65006;
@@ -85,6 +86,7 @@ namespace resource
         VkImageView view;
         memory::allocation_t allocation;
         VkImageUsageFlags usage;
+        VkFormat format;
         u16 descriptor_index;
     };
 
@@ -184,7 +186,8 @@ namespace resource
             b8 write_to_color_buffer;
             b8 write_to_interaction_buffer;
             b8 write_to_normal_buffer;
-            u16 _pad0;
+            b8 write_to_material_buffer;
+            b8 _pad0;
         };
 
         static_assert(offsetof(setup_t, id) == 0);
@@ -216,6 +219,8 @@ namespace resource
             math::linear_color_t shadow_tint;
             f32 shadow_threshold;
             f32 shadow_softness;
+            u16 outline_group;
+            u16 outline_priority;
         };
 
         static_assert(offsetof(setup_t, id) == 0);
@@ -229,6 +234,8 @@ namespace resource
         math::linear_color_t shadow_tint;
         f32 shadow_threshold;
         f32 shadow_softness;
+        u16 outline_group;
+        u16 outline_priority;
         u16 descriptor_index;
     };
 

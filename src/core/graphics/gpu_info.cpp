@@ -201,6 +201,7 @@ static void get_formats(gpu_info::aggregate_t *t)
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_D32_SFLOAT_S8_UINT, &t->format.D32_SFLOAT_S8_UINT);
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_D24_UNORM_S8_UINT, &t->format.D24_UNORM_S8_UINT);
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R32_UINT, &t->format.R32_UINT);
+    vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R16_UINT, &t->format.R16_UINT);
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R16G16_SNORM, &t->format.R16G16_SNORM);
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R8G8B8A8_UNORM, &t->format.R8G8B8A8_UNORM);
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R16G16B16A16_SFLOAT, &t->format.R16G16B16A16_SFLOAT);
@@ -209,33 +210,27 @@ static void get_formats(gpu_info::aggregate_t *t)
     t->format.interaction_buffer = VK_FORMAT_UNDEFINED;
     t->format.normal_buffer = VK_FORMAT_UNDEFINED;
     t->format.color_buffer = VK_FORMAT_UNDEFINED;
+    t->format.material_buffer = VK_FORMAT_UNDEFINED;
 
     if (t->format.D32_SFLOAT.optimalTilingFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
     {
         t->format.depth_buffer = VK_FORMAT_D32_SFLOAT;
     }
-    else if (t->format.D32_SFLOAT_S8_UINT.optimalTilingFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
-    {
-        t->format.depth_buffer = VK_FORMAT_D32_SFLOAT_S8_UINT;
-    }
-    else if (t->format.D24_UNORM_S8_UINT.optimalTilingFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
-    {
-        t->format.depth_buffer = VK_FORMAT_D24_UNORM_S8_UINT;
-    }
-
     if (t->format.R32_UINT.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
     {
         t->format.interaction_buffer = VK_FORMAT_R32_UINT;
     }
-
     if (t->format.R16G16_SNORM.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
     {
         t->format.normal_buffer = VK_FORMAT_R16G16_SNORM;
     }
-
     if (t->format.R16G16B16A16_SFLOAT.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
     {
         t->format.color_buffer = VK_FORMAT_R16G16B16A16_SFLOAT;
+    }
+    if (t->format.R16_UINT.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
+    {
+        t->format.material_buffer = VK_FORMAT_R16_UINT;
     }
 }
 

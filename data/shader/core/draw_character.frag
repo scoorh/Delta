@@ -18,8 +18,9 @@ layout(location = 4) in vec3 in_view_normal;
 
 
 layout(location = 0) out vec4 out_color_buffer;
-layout(location = 1) out uint out_interaction_buffer;
+layout(location = 1) out uint out_material_buffer;
 layout(location = 2) out vec2 out_normal_buffer;
+layout(location = 3) out uint out_interaction_buffer;
 
 
 void main()
@@ -40,6 +41,7 @@ void main()
     vec4 final_color = mix(color * shadow_tint, color, toon);
 
     out_color_buffer = vec4(final_color.rgb, 1.0);
-    out_interaction_buffer = in_interaction_id;
+    out_material_buffer = in_material_idx;
     out_normal_buffer = encode_octahedral_normal(normalize(in_view_normal));
+    out_interaction_buffer = in_interaction_id;
 }

@@ -33,6 +33,7 @@ namespace renderer
         const auto color_buffer_image_ = resource::image::find(resource::color_buffer_image_id);
         const auto normal_buffer_image_ = resource::image::find(resource::normal_buffer_image_id);
         const auto depth_buffer_image_ = resource::image::find(resource::depth_buffer_image_id);
+        const auto material_buffer_image_ = resource::image::find(resource::material_buffer_image_id);
 
         const auto linear_linear_linear_sampler = resource::image_sampler::find(metadata::resource_package::linear_linear_linear_sampler_id);
         const auto nearest_nearest_nearest_sampler = resource::image_sampler::find(metadata::resource_package::nearest_nearest_nearest_sampler_id);
@@ -65,6 +66,8 @@ namespace renderer
             frame->pipeline.post_process.push_constant.normal_buffer_sampler_idx = nearest_nearest_nearest_sampler->descriptor_index;
             frame->pipeline.post_process.push_constant.depth_buffer_image_idx = depth_buffer_image_->descriptor_index;
             frame->pipeline.post_process.push_constant.depth_buffer_sampler_idx = linear_linear_linear_sampler->descriptor_index;
+            frame->pipeline.post_process.push_constant.material_buffer_image_idx = material_buffer_image_->descriptor_index;
+            frame->pipeline.post_process.push_constant.material_buffer_sampler_idx = linear_linear_linear_sampler->descriptor_index;
         }
     }
 }
@@ -270,6 +273,7 @@ static void create_descriptor_sets(renderer::frame_t* frame)
     frame->descriptor_set.cull_mesh_array[resource::pipeline_layout::cull_mesh::mesh_cull_data_descriptor_idx] = frame->descriptor_set.mesh_cull_data;
 
     frame->descriptor_set.post_process_array[resource::pipeline_layout::post_process::frame_data_descriptor_idx] = frame->descriptor_set.frame_data;
+    frame->descriptor_set.post_process_array[resource::pipeline_layout::post_process::mesh_data_descriptor_idx] = frame->descriptor_set.mesh_data;
     frame->descriptor_set.post_process_array[resource::pipeline_layout::post_process::image_data_descriptor_idx] = frame->descriptor_set.image_data;
 }
 

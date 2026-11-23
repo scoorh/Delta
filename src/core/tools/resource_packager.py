@@ -53,10 +53,25 @@ def get_value(element, name, default, throw_on_missing):
         if throw_on_missing:
             raise ValueError(f"Missing key value: '{name}'")
         return default
-    try:
-        return int(element[name])
-    except(ValueError, TypeError):
-        return element[name]
+
+    value = element[name]
+
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, (int, float)):
+        return value
+
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except(ValueError, TypeError):
+            try:
+                return float(value)
+            except ValueError:
+                return value
+
+    return value
 
 
 def pack_color(color: dict) -> int:
@@ -199,6 +214,8 @@ def process_material_setups(array, output_file):
         shadow_tint = get_value(element, "shadow_tint", default_color, 0)
         shadow_threshold = get_value(element, "shadow_threshold", 0.5, 0)
         shadow_softness = get_value(element, "shadow_softness", 0.01, 0)
+        outline_priority = get_value(element, "outline_priority", 10, 0)
+        outline_group = get_value(element, "outline_group", 1, 0)
 
         output_file.write(struct.pack('<H', id)) #2
         output_file.write(struct.pack('<H', 65535)) #4
@@ -206,6 +223,8 @@ def process_material_setups(array, output_file):
         output_file.write(pack_linear_color(shadow_tint)) #20
         output_file.write(struct.pack('<f', shadow_threshold)) #24
         output_file.write(struct.pack('<f', shadow_softness)) #28
+        output_file.write(struct.pack('<H', outline_group)) #32
+        output_file.write(struct.pack('<H', outline_priority)) #34
 
 
     return
@@ -312,6 +331,7 @@ def process_pipeline_setups(array, output_file):
         write_to_interaction_buffer = 0
         write_to_color_buffer = 0
         write_to_normal_buffer = 0
+        write_to_material_buffer = 0
 
         if is_compute == 0:
             primitive_restart_enabled = get_value(element, "primitive_restart_enabled", 0, 0)
@@ -327,6 +347,7 @@ def process_pipeline_setups(array, output_file):
             write_to_interaction_buffer = get_value(element, "write_to_interaction_buffer", 0, 0)
             write_to_color_buffer = get_value(element, "write_to_color_buffer", 0, 0)
             write_to_normal_buffer = get_value(element, "write_to_normal_buffer", 0, 0)
+            write_to_material_buffer = get_value(element, "write_to_material_buffer", 0, 0)
         else:
             compute_shader_id = get_value(element, "compute_shader_id", 0, 1)
 
@@ -352,7 +373,8 @@ def process_pipeline_setups(array, output_file):
         output_file.write(struct.pack('<B', write_to_color_buffer)) #28
         output_file.write(struct.pack('<B', write_to_interaction_buffer)) #29
         output_file.write(struct.pack('<B', write_to_normal_buffer)) #30
-        output_file.write(struct.pack('<H', 65535)) #32
+        output_file.write(struct.pack('<B', write_to_material_buffer)) #31
+        output_file.write(struct.pack('<B', 255)) #32
 
 
     return

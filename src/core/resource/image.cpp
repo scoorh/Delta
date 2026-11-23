@@ -28,6 +28,7 @@ namespace resource::image
         image->allocation.gpu_block = nullptr;
         image->view = nullptr;
         image->usage = setup->usage;
+        image->format = setup->format;
         image->descriptor_index = (u16) memory::resource_pool::get_index(&images, image);
 
 

@@ -402,6 +402,8 @@ static b8 send_materials_to_gpu(resource::material_t **materials, const u32 mate
             src->shadow_tint = materials[m]->shadow_tint;
             src->shadow_threshold = materials[m]->shadow_threshold;
             src->shadow_softness = materials[m]->shadow_softness;
+            src->outline_group = materials[m]->outline_group;
+            src->outline_priority = materials[m]->outline_priority;
 
             cmd.buffer.dst_offset = renderer::frames[f].data_offset.materials + materials[m]->descriptor_index * sizeof(resource::shader::material_t);
             cmd.buffer.src_offset = m * sizeof(resource::shader::material_t);

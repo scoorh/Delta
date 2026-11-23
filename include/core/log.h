@@ -43,6 +43,7 @@ namespace logger
         create_depth_buffer,
         create_normal_buffer,
         create_color_buffer,
+        create_material_buffer,
         create_interaction_buffer,
         vkCreateGraphicsPipelines,
         vkCreateComputePipelines,

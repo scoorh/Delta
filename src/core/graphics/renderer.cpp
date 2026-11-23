@@ -74,7 +74,7 @@ static void geometry_pass(renderer::frame_t *frame)
 {
     const auto cmd = frame->draw_cmd_buffer;
 
-    constexpr u32 attachment_image_barrier_count = 4;
+    constexpr u32 attachment_image_barrier_count = 5;
     VkImageMemoryBarrier2 attachment_image_barriers[attachment_image_barrier_count] = {};
     VkDependencyInfo layout_transition_barrier_dependency_info = {};
 
@@ -101,6 +101,13 @@ static void geometry_pass(renderer::frame_t *frame)
                                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
 
     resource::image::layout_transition(&attachment_image_barriers[3],
+                                       renderer::material_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+
+
+    resource::image::layout_transition(&attachment_image_barriers[4],
                                        renderer::depth_buffer_image, VK_IMAGE_ASPECT_DEPTH_BIT,
                                        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
@@ -109,7 +116,7 @@ static void geometry_pass(renderer::frame_t *frame)
     vulkan::vkCmdPipelineBarrier2(cmd, &layout_transition_barrier_dependency_info);
 
 
-    constexpr u32 color_attachment_count = 3;
+    constexpr u32 color_attachment_count = 4;
     VkRenderingAttachmentInfo color_attachment_info[color_attachment_count] = {};
     VkRenderingAttachmentInfo depth_attachment_info = {};
 
@@ -124,7 +131,7 @@ static void geometry_pass(renderer::frame_t *frame)
     color_attachment_info[0].clearValue.color.float32[3] = 1.0f;
 
     color_attachment_info[1].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    color_attachment_info[1].imageView = renderer::interaction_buffer_image_view;
+    color_attachment_info[1].imageView = renderer::material_buffer_image_view;
     color_attachment_info[1].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
     color_attachment_info[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     color_attachment_info[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -139,6 +146,13 @@ static void geometry_pass(renderer::frame_t *frame)
     color_attachment_info[2].clearValue.color.float32[1] = 0.0f;
     color_attachment_info[2].clearValue.color.float32[2] = 0.0f;
     color_attachment_info[2].clearValue.color.float32[3] = 0.0f;
+
+    color_attachment_info[3].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    color_attachment_info[3].imageView = renderer::interaction_buffer_image_view;
+    color_attachment_info[3].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    color_attachment_info[3].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment_info[3].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment_info[3].clearValue.color.uint32[0] = 0xffffffff;
 
     depth_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     depth_attachment_info.imageView = renderer::depth_buffer_image_view;
@@ -199,7 +213,7 @@ static void post_process_pass(renderer::frame_t *frame)
 {
     const auto cmd = frame->draw_cmd_buffer;
 
-    constexpr u32 attachment_image_barrier_count = 4;
+    constexpr u32 attachment_image_barrier_count = 5;
     VkImageMemoryBarrier2 attachment_image_barriers[attachment_image_barrier_count] = {};
     VkDependencyInfo layout_transition_barrier_dependency_info = {};
 
@@ -226,6 +240,12 @@ static void post_process_pass(renderer::frame_t *frame)
                                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
 
     resource::image::layout_transition(&attachment_image_barriers[3],
+                                       renderer::material_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                       VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
+
+    resource::image::layout_transition(&attachment_image_barriers[4],
                                        renderer::depth_buffer_image, VK_IMAGE_ASPECT_DEPTH_BIT,
                                        VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
                                        VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
@@ -268,10 +288,8 @@ static void post_process_pass(renderer::frame_t *frame)
 
 
     frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.exposure = 1.0f;
-    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.normal_threshold = 0.12f;
-    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.normal_softness = 0.08f;
-    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.depth_threshold = 0.015f;
-    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.depth_softness = 0.02f;
+    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.normal_threshold = 0.2f;
+    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.depth_threshold = 0.01f;
     frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.outline_strength = 0.9f;
     vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, frame->pipeline.post_process.inner_mesh_outline_and_tonemap);
     vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, frame->pipeline.post_process.inner_mesh_outline_and_tonemap_layout, 0, resource::pipeline_layout::post_process::descriptor_count, frame->descriptor_set.post_process_array, 0, nullptr);
@@ -290,7 +308,7 @@ static void transfer_frame_uniform(renderer::frame_t *frame)
 
     math::vector4_t global_light_direction = {-0.57735f, -0.57735f, 0.57735f, 0.0f};
     math::quaternion_t camera_rotation;
-    f32 camera_near_z = 0.01f;
+    f32 camera_near_z = 0.1f;
     f32 camera_far_z = 1000.0f;
     math::vector4_t camera_position = {0.0f, 4.0f, 2.0f, 0.0f};
     math::quaternion::from_euler(&camera_rotation, 0, 0, 0);

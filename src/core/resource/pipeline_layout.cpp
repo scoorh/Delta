@@ -105,6 +105,7 @@ static void create_post_process()
     VkPushConstantRange push_constant_ranges[push_constant_range_count];
 
     descriptor_sets[resource::pipeline_layout::post_process::frame_data_descriptor_idx] = resource::descriptor_set_layouts.frame_data;
+    descriptor_sets[resource::pipeline_layout::post_process::mesh_data_descriptor_idx] = resource::descriptor_set_layouts.mesh_data;
     descriptor_sets[resource::pipeline_layout::post_process::image_data_descriptor_idx] = resource::descriptor_set_layouts.image_data;
 
     push_constant_ranges[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
