@@ -23,7 +23,7 @@ layout(push_constant) uniform PushConstant
     uint depth_buffer_sampler_idx;
     uint material_buffer_image_idx;
     uint material_buffer_sampler_idx;
-    float exposure;
+    float hdr_exposure;
 };
 
 
@@ -42,7 +42,10 @@ void main()
     float material_edge = detect_material_edge(pixel, material_idx);
 
     vec3 hdr_color = texel_fetch(color_buffer_image_idx, pixel).rgb;
-    vec3 color = mix(hdr_color, outline_color_vec4(material_idx).rgb, material_edge);
+    hdr_color *= exp2(hdr_exposure);
+    vec3 ldr_color = aces_tonemap(hdr_color);
+
+    vec3 color = mix(ldr_color, outline_color_vec4(material_idx).rgb, material_edge);
 
     out_color_buffer = vec4(color, 1.0);
 }

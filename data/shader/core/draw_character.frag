@@ -38,7 +38,7 @@ void main()
     vec4 color = color_vec4(in_material_idx);
     vec4 shadow_tint = shadow_tint_vec4(in_material_idx);
 
-    vec4 final_color = mix(color * shadow_tint, color, toon);
+    vec4 final_color = mix(color * shadow_tint, color, brightness);
 
     out_color_buffer = vec4(final_color.rgb, 1.0);
     out_material_buffer = in_material_idx;

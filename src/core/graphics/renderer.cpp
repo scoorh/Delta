@@ -291,7 +291,7 @@ static void post_process_pass(renderer::frame_t *frame)
     vulkan::vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 
-    frame->pipeline.post_process.push_constant.post_process.exposure = 1.0f;
+    frame->pipeline.post_process.push_constant.post_process.exposure = 0.0f;
     frame->pipeline.post_process.push_constant.post_process.normal_threshold = 0.2f;
     frame->pipeline.post_process.push_constant.post_process.depth_threshold = 0.01f;
     frame->pipeline.post_process.push_constant.post_process.outline_strength = 0.9f;
