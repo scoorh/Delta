@@ -28,7 +28,7 @@ namespace renderer
     void initialize_frames()
     {
         const auto cull_mesh_pipeline = resource::pipeline::find(metadata::resource_package::cull_mesh_pipeline_id);
-        const auto inner_mesh_outline_and_tonemap_pipeline = resource::pipeline::find(metadata::resource_package::inner_mesh_outline_and_tonemap_pipeline_id);
+        const auto post_process_pipeline = resource::pipeline::find(metadata::resource_package::post_process_pipeline_id);
 
         const auto color_buffer_image_ = resource::image::find(resource::color_buffer_image_id);
         const auto normal_buffer_image_ = resource::image::find(resource::normal_buffer_image_id);
@@ -58,8 +58,8 @@ namespace renderer
             frame->pipeline.compute.cull_mesh_layout = cull_mesh_pipeline->layout;
             frame->pipeline.compute.wave_size = 32;
 
-            frame->pipeline.post_process.inner_mesh_outline_and_tonemap = inner_mesh_outline_and_tonemap_pipeline->handle;
-            frame->pipeline.post_process.inner_mesh_outline_and_tonemap_layout = inner_mesh_outline_and_tonemap_pipeline->layout;
+            frame->pipeline.post_process.post_process_pipeline = post_process_pipeline->handle;
+            frame->pipeline.post_process.post_process_pipeline_layout = post_process_pipeline->layout;
             frame->pipeline.post_process.push_constant.color_buffer_image_idx = color_buffer_image_->descriptor_index;
             frame->pipeline.post_process.push_constant.color_buffer_sampler_idx = linear_linear_linear_sampler->descriptor_index;
             frame->pipeline.post_process.push_constant.normal_buffer_image_idx = normal_buffer_image_->descriptor_index;

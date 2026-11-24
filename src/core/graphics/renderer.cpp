@@ -186,15 +186,8 @@ static void geometry_pass(renderer::frame_t *frame)
     vulkan::vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 
-    auto pipeline = resource::pipeline::find(metadata::resource_package::outer_mesh_outline_pipeline_id);
-    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
-    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, resource::pipeline_layout::draw_mesh::descriptor_count, frame->descriptor_set.draw_mesh_array, 0, nullptr);
-
-    auto mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
-    vulkan::vkCmdBindIndexBuffer(cmd, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT16);
-
-    vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 3, sizeof(resource::shader::mesh_indirect_draw_cmd_t));
-
+    resource::pipeline_t* pipeline;
+    resource::mesh_t* mesh;
 
     pipeline = resource::pipeline::find(metadata::resource_package::draw_character_pipeline_id);
     vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
@@ -204,6 +197,17 @@ static void geometry_pass(renderer::frame_t *frame)
     vulkan::vkCmdBindIndexBuffer(cmd, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
     vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 3, sizeof(resource::shader::mesh_indirect_draw_cmd_t));
+
+
+    pipeline = resource::pipeline::find(metadata::resource_package::outer_mesh_outline_pipeline_id);
+    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
+    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, resource::pipeline_layout::draw_mesh::descriptor_count, frame->descriptor_set.draw_mesh_array, 0, nullptr);
+
+    mesh = resource::mesh::find(metadata::resource_package::default_character_body_mesh_id);
+    vulkan::vkCmdBindIndexBuffer(cmd, mesh->index_buffer, 0, VK_INDEX_TYPE_UINT16);
+
+    vulkan::vkCmdDrawIndexedIndirect(cmd, frame->data_buffer, frame->data_offset.mesh_indirect_draw_cmds, 3, sizeof(resource::shader::mesh_indirect_draw_cmd_t));
+
 
     vulkan::vkCmdEndRendering(cmd);
 }
@@ -287,13 +291,13 @@ static void post_process_pass(renderer::frame_t *frame)
     vulkan::vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 
-    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.exposure = 1.0f;
-    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.normal_threshold = 0.2f;
-    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.depth_threshold = 0.01f;
-    frame->pipeline.post_process.push_constant.inner_mesh_outline_and_tonemap.outline_strength = 0.9f;
-    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, frame->pipeline.post_process.inner_mesh_outline_and_tonemap);
-    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, frame->pipeline.post_process.inner_mesh_outline_and_tonemap_layout, 0, resource::pipeline_layout::post_process::descriptor_count, frame->descriptor_set.post_process_array, 0, nullptr);
-    vulkan::vkCmdPushConstants(cmd, frame->pipeline.post_process.inner_mesh_outline_and_tonemap_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(frame->pipeline.post_process.push_constant), &frame->pipeline.post_process.push_constant);
+    frame->pipeline.post_process.push_constant.post_process.exposure = 1.0f;
+    frame->pipeline.post_process.push_constant.post_process.normal_threshold = 0.2f;
+    frame->pipeline.post_process.push_constant.post_process.depth_threshold = 0.01f;
+    frame->pipeline.post_process.push_constant.post_process.outline_strength = 0.9f;
+    vulkan::vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, frame->pipeline.post_process.post_process_pipeline);
+    vulkan::vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, frame->pipeline.post_process.post_process_pipeline_layout, 0, resource::pipeline_layout::post_process::descriptor_count, frame->descriptor_set.post_process_array, 0, nullptr);
+    vulkan::vkCmdPushConstants(cmd, frame->pipeline.post_process.post_process_pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(frame->pipeline.post_process.push_constant), &frame->pipeline.post_process.push_constant);
     vulkan::vkCmdDraw(cmd, 3, 1, 0, 0);
 
 
@@ -330,7 +334,9 @@ static void transfer_frame_uniform(renderer::frame_t *frame)
 
     math::matrix4x4::identity(&frame_data_uniform->projection);
     math::matrix4x4::identity(&frame_data_uniform->view);
+    math::matrix4x4::identity(&frame_data_uniform->inverse_projection);
     math::matrix4x4::perspective(&frame_data_uniform->projection, (f32) renderer::window_width / (f32) renderer::window_height, math::degree_to_radian(60), camera_near_z, camera_far_z);
+    math::matrix4x4::inverse_perspective(&frame_data_uniform->inverse_projection, (f32) renderer::window_width / (f32) renderer::window_height, math::degree_to_radian(60), camera_near_z, camera_far_z);
     math::matrix4x4::look_at(&frame_data_uniform->view, &camera_position, &camera_rotation);
     math::matrix4x4::multiply(&frame_data_uniform->view_projection, &frame_data_uniform->projection, &frame_data_uniform->view);
 

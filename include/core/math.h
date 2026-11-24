@@ -143,6 +143,7 @@ namespace math::matrix4x4
     void world_transform(matrix4x4_t *o, f32 tx, f32 ty, f32 tz, f32 uniform_s, const quaternion_t *q);
 
     void perspective(matrix4x4_t *o, f32 aspect_ratio, f32 field_of_view, f32 near_z, f32 far_z);
+    void inverse_perspective(matrix4x4_t *o, f32 aspect_ratio, f32 field_of_view, f32 near_z, f32 far_z);
 
     void look_at(matrix4x4_t *o, f32 ex, f32 ey, f32 ez, f32 tx, f32 ty, f32 tz, f32 ux, f32 uy, f32);
     void look_at(matrix4x4_t *o, const vector4_t *from, const quaternion_t *q);

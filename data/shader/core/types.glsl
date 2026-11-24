@@ -1,10 +1,12 @@
 #ifndef _EXTENSIONS_
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_EXT_samplerless_texture_functions : require
 #define _EXTENSIONS_
 #endif
 
 
+const uint invalid_material_idx = 0xffffu;
 const float inverse_255 = 1.0 / 255.0;
 
 
@@ -14,6 +16,7 @@ layout(std140, set = _set_, binding = _binding_) uniform _access_ frame_uniform_
     mat4 view; \
     mat4 projection; \
     mat4 view_projection; \
+    mat4 inverse_projection; \
     vec4 packed0; \
     vec4 global_light_direction_; \
     vec4 camera_position_; \
@@ -22,6 +25,7 @@ layout(std140, set = _set_, binding = _binding_) uniform _access_ frame_uniform_
 
 #define view_matrix _frame_uniform.view
 #define projection_matrix _frame_uniform.projection
+#define inverse_projection_matrix _frame_uniform.inverse_projection
 #define view_projection_matrix _frame_uniform.view_projection
 #define viewport_size _frame_uniform.packed0.xy
 #define viewport_width _frame_uniform.packed0.x
@@ -45,6 +49,10 @@ layout(set = _set_, binding = _binding_) uniform utexture2D uimages[];
 
 #define sampler_array(_set_, _binding_) \
 layout(set = _set_, binding = _binding_) uniform sampler samplers[];
+
+#define texel_fetch_u(image_idx, pixel) texelFetch(uimages[image_idx], pixel, 0)
+#define texel_fetch(image_idx, pixel) texelFetch(images[image_idx], pixel, 0)
+
 #endif
 
 
@@ -99,8 +107,11 @@ struct material_t { \
     uvec2 shadow_tint; \
     float shadow_threshold; \
     float shadow_softness; \
+    uvec2 outline_color; \
     uint packed1; \
     uint _pad0; \
+    uint _pad1; \
+    uint _pad2; \
 }; \
 layout(set = _set_, binding = _binding_) buffer _access_ material_ssbo_t { \
     material_t array[]; \
@@ -109,16 +120,22 @@ layout(set = _set_, binding = _binding_) buffer _access_ material_ssbo_t { \
 
 #define shadow_threshold(material_idx) _material_ssbo.array[material_idx].shadow_threshold
 #define shadow_softness(material_idx) _material_ssbo.array[material_idx].shadow_softness
-#define outline_group(material_idx) (_material_ssbo.array[material_idx].packed1 & 0x0000ffffu)
-#define outline_priority(material_idx) ((_material_ssbo.array[material_idx].packed1 & 0xffff0000u) >> 16)
+#define outline_priority(material_idx) (_material_ssbo.array[material_idx].packed1 & 0x0000ffffu)
+#define outline_group(material_idx) ((_material_ssbo.array[material_idx].packed1 & 0xffff0000u) >> 16)
+
 
 #define color_vec4(material_idx) \
     vec4(unpackHalf2x16(_material_ssbo.array[material_idx].color.x), \
          unpackHalf2x16(_material_ssbo.array[material_idx].color.y))
 
- #define shadow_tint_vec4(material_idx) \
-     vec4(unpackHalf2x16(_material_ssbo.array[material_idx].shadow_tint.x), \
-          unpackHalf2x16(_material_ssbo.array[material_idx].shadow_tint.y))
+#define shadow_tint_vec4(material_idx) \
+    vec4(unpackHalf2x16(_material_ssbo.array[material_idx].shadow_tint.x), \
+         unpackHalf2x16(_material_ssbo.array[material_idx].shadow_tint.y))
+
+#define outline_color_vec4(material_idx) \
+    vec4(unpackHalf2x16(_material_ssbo.array[material_idx].outline_color.x), \
+         unpackHalf2x16(_material_ssbo.array[material_idx].outline_color.y))
+
 
 
 #endif
@@ -241,4 +258,13 @@ float linearize_depth(float depth, float near_z, float far_z)
 ivec2 clamp_pixel(ivec2 p, ivec2 s)
 {
     return clamp(p, ivec2(0), s - ivec2(1));
+}
+
+
+vec3 reconstruct_view_position(ivec2 pixel, ivec2 size_, float depth, mat4 inverse_projection_)
+{
+    vec2 uv = (vec2(pixel) + 0.5) / vec2(size_);
+    vec2 ndc = uv * 2.0 - 1.0;
+    vec4 position_ = inverse_projection_ * vec4(ndc, depth, 1.0);
+    return position_.xyz / position_.w;
 }

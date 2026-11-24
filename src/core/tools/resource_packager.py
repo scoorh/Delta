@@ -206,16 +206,18 @@ def process_image_setups(array, output_file):
 def process_material_setups(array, output_file):
     global total_file_size
 
-    default_color = {'r': 255, 'g':255, 'b':255, 'a':255}
+    default_white_color = {'r': 255, 'g':255, 'b':255, 'a':255}
+    default_black_color = {'r': 0, 'g':0, 'b':0, 'a':255}
 
     for element in array:
         id = get_value(element, "id", 0, 1)
-        color = get_value(element, "color", default_color, 0)
-        shadow_tint = get_value(element, "shadow_tint", default_color, 0)
+        color = get_value(element, "color", default_white_color, 0)
+        shadow_tint = get_value(element, "shadow_tint", default_white_color, 0)
         shadow_threshold = get_value(element, "shadow_threshold", 0.5, 0)
         shadow_softness = get_value(element, "shadow_softness", 0.01, 0)
-        outline_priority = get_value(element, "outline_priority", 10, 0)
-        outline_group = get_value(element, "outline_group", 1, 0)
+        outline_color = get_value(element, "outline_color", default_black_color, 0)
+        outline_priority = get_value(element, "outline_priority", 0, 0)
+        outline_group = get_value(element, "outline_group", 0, 0)
 
         output_file.write(struct.pack('<H', id)) #2
         output_file.write(struct.pack('<H', 65535)) #4
@@ -223,9 +225,9 @@ def process_material_setups(array, output_file):
         output_file.write(pack_linear_color(shadow_tint)) #20
         output_file.write(struct.pack('<f', shadow_threshold)) #24
         output_file.write(struct.pack('<f', shadow_softness)) #28
-        output_file.write(struct.pack('<H', outline_group)) #32
-        output_file.write(struct.pack('<H', outline_priority)) #34
-
+        output_file.write(pack_linear_color(outline_color)) #36
+        output_file.write(struct.pack('<H', outline_priority)) #38
+        output_file.write(struct.pack('<H', outline_group)) #40
 
     return
 

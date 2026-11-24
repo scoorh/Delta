@@ -65,8 +65,13 @@
       },
       "shadow_threshold": 0.45,
       "shadow_softness": 0.01,
-      "outline_group": 3,
-      "outline_priority": 35
+      "outline_color": {
+        "r": 0,
+        "g": 0,
+        "b": 0
+      },
+      "outline_priority": 100,
+      "outline_group": 3
     },
     {
       "id": "metadata::resource_package::default_character_clothes_material_id",
@@ -82,8 +87,13 @@
       },
       "shadow_threshold": 0.50,
       "shadow_softness": 0.01,
-      "outline_group": 2,
-      "outline_priority": 25
+      "outline_color": {
+        "r": 0,
+        "g": 0,
+        "b": 0
+      },
+      "outline_priority": 1,
+      "outline_group": 1
     },
     {
       "id": "metadata::resource_package::default_character_hair_material_id",
@@ -99,8 +109,13 @@
       },
       "shadow_threshold": 0.40,
       "shadow_softness": 0.015,
-      "outline_group": 1,
-      "outline_priority": 20
+      "outline_color": {
+        "r": 0,
+        "g": 0,
+        "b": 0
+      },
+      "outline_priority": 1,
+      "outline_group": 2
     }
   ],
 

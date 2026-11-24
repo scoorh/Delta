@@ -19,6 +19,7 @@ namespace resource
             math::matrix4x4_t view;
             math::matrix4x4_t projection;
             math::matrix4x4_t view_projection;
+            math::matrix4x4_t inverse_projection;
 
             union
             {
@@ -69,17 +70,21 @@ namespace resource
             math::linear_color_t shadow_tint;
             f32 shadow_threshold;
             f32 shadow_softness;
+            math::linear_color_t outline_color;
 
             union
             {
                 u32 packed1;
                 struct
                 {
-                    u16 outline_group;
                     u16 outline_priority;
+                    u16 outline_group;
                 };
             };
+
             u32 _pad0;
+            u32 _pad1;
+            u32 _pad2;
         };
 
         static_assert(sizeof(material_t) % 16 == 0);
@@ -447,7 +452,7 @@ namespace resource
                         f32 normal_threshold;
                         f32 depth_threshold;
                         f32 outline_strength;
-                    } inner_mesh_outline_and_tonemap;
+                    } post_process;
                 };
             };
         }

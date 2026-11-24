@@ -219,8 +219,9 @@ namespace resource
             math::linear_color_t shadow_tint;
             f32 shadow_threshold;
             f32 shadow_softness;
-            u16 outline_group;
+            math::linear_color_t outline_color;
             u16 outline_priority;
+            u16 outline_group;
         };
 
         static_assert(offsetof(setup_t, id) == 0);
@@ -234,8 +235,9 @@ namespace resource
         math::linear_color_t shadow_tint;
         f32 shadow_threshold;
         f32 shadow_softness;
-        u16 outline_group;
+        math::linear_color_t outline_color;
         u16 outline_priority;
+        u16 outline_group;
         u16 descriptor_index;
     };
 

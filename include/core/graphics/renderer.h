@@ -82,8 +82,8 @@ namespace renderer
         {
             struct
             {
-                VkPipeline inner_mesh_outline_and_tonemap;
-                VkPipelineLayout inner_mesh_outline_and_tonemap_layout;
+                VkPipeline post_process_pipeline;
+                VkPipelineLayout post_process_pipeline_layout;
                 resource::pipeline_layout::post_process::push_constant_t push_constant;
             } post_process;
 

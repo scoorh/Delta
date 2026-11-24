@@ -108,6 +108,19 @@ namespace math::matrix4x4
     }
 
 
+    void inverse_perspective(matrix4x4_t *o, const f32 aspect_ratio, const f32 field_of_view, const f32 near_z, const f32 far_z)
+    {
+        const float tanhfov = math::tan(field_of_view * 0.5f);
+        const float k = 1.0f / near_z;
+        o->array[0] = aspect_ratio * tanhfov;
+        o->array[5] = -tanhfov;
+        o->array[10] = 0.0f;
+        o->array[11] = 1.0f / far_z - k;
+        o->array[14] = 1.0f;
+        o->array[15] = k;
+    }
+
+
     void look_at(matrix4x4_t *o, const f32 ex, const f32 ey, const f32 ez, const f32 tx, const f32 ty, const f32 tz, const f32 ux, const f32 uy, const f32 uz)
     {
         vector4_t f;

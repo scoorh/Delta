@@ -13,6 +13,7 @@ layout(location = 0) in flat uint in_material_idx;
 
 
 layout(location = 0) out vec4 out_color_buffer;
+layout(location = 1) out uint out_material_buffer;
 
 
 void main()
@@ -20,4 +21,5 @@ void main()
     vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
 
     out_color_buffer = color;
+    out_material_buffer = invalid_material_idx;
 }

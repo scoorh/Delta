@@ -10,7 +10,7 @@ namespace file::resource_package
     void validate_core_package_load()
     {
         const auto cull_mesh_pipeline = resource::pipeline::find(metadata::resource_package::cull_mesh_pipeline_id);
-        const auto inner_mesh_outline_and_tonemap_pipeline = resource::pipeline::find(metadata::resource_package::inner_mesh_outline_and_tonemap_pipeline_id);
+        const auto post_process_pipeline = resource::pipeline::find(metadata::resource_package::post_process_pipeline_id);
         const auto draw_character_pipeline = resource::pipeline::find(metadata::resource_package::draw_character_pipeline_id);
         const auto outer_mesh_outline_pipeline = resource::pipeline::find(metadata::resource_package::outer_mesh_outline_pipeline_id);
 
@@ -19,8 +19,8 @@ namespace file::resource_package
 
         if (!cull_mesh_pipeline)
             logger::critical_error(logger::code::missing_cull_mesh_pipeline, metadata::resource_package::cull_mesh_pipeline_id);
-        if (!inner_mesh_outline_and_tonemap_pipeline)
-            logger::critical_error(logger::code::missing_inner_mesh_outline_and_tonemap_pipeline, metadata::resource_package::inner_mesh_outline_and_tonemap_pipeline_id);
+        if (!post_process_pipeline)
+            logger::critical_error(logger::code::missing_post_process_pipeline, metadata::resource_package::post_process_pipeline_id);
         if (!draw_character_pipeline)
             logger::critical_error(logger::code::missing_draw_character_pipeline, metadata::resource_package::draw_character_pipeline_id);
         if (!outer_mesh_outline_pipeline)
@@ -402,6 +402,7 @@ static b8 send_materials_to_gpu(resource::material_t **materials, const u32 mate
             src->shadow_tint = materials[m]->shadow_tint;
             src->shadow_threshold = materials[m]->shadow_threshold;
             src->shadow_softness = materials[m]->shadow_softness;
+            src->outline_color = materials[m]->outline_color;
             src->outline_group = materials[m]->outline_group;
             src->outline_priority = materials[m]->outline_priority;
 

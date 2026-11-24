@@ -67,7 +67,7 @@ namespace logger
         reserve_position_vertex_buffer_space,
         reserve_attribute_vertex_buffer_space,
         missing_cull_mesh_pipeline,
-        missing_inner_mesh_outline_and_tonemap_pipeline,
+        missing_post_process_pipeline,
         missing_draw_character_pipeline,
         missing_outer_mesh_outline_pipeline,
         missing_linear_linear_linear_sampler,

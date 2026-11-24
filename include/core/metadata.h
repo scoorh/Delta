@@ -13,7 +13,7 @@ namespace metadata::resource_package
     constexpr u32 mesh_setup_size = 20;
     constexpr u32 image_setup_size = 20;
     constexpr u32 image_sampler_setup_size = 20;
-    constexpr u32 material_setup_size = 32;
+    constexpr u32 material_setup_size = 40;
     constexpr u32 shader_setup_size = 12;
     constexpr u32 pipeline_setup_size = 32;
     constexpr u32 package_header_size = 44;
@@ -75,7 +75,7 @@ namespace metadata::resource_package
     constexpr u32 draw_character_vs_id = 4;
     constexpr u32 draw_character_fs_id = 5;
     constexpr u32 fullscreen_quad_vs_id = 6;
-    constexpr u32 inner_mesh_outline_and_tonemap_fs_id = 7;
+    constexpr u32 post_process_fs_id = 7;
 
     // ==================================================
     // pipeline
@@ -83,7 +83,7 @@ namespace metadata::resource_package
     constexpr u32 cull_mesh_pipeline_id = 1;
     constexpr u32 outer_mesh_outline_pipeline_id = 2;
     constexpr u32 draw_character_pipeline_id = 3;
-    constexpr u32 inner_mesh_outline_and_tonemap_pipeline_id = 4;
+    constexpr u32 post_process_pipeline_id = 4;
 }
 
 

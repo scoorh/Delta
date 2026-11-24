@@ -24,91 +24,27 @@ layout(push_constant) uniform PushConstant
     uint material_buffer_image_idx;
     uint material_buffer_sampler_idx;
     float exposure;
-    float normal_threshold;
-    float depth_threshold;
-    float outline_strength;
 };
 
 
 layout(location = 0) out vec4 out_color_buffer;
 
 
-const uint invalid_material_idx = 0xffffu;
-
-vec3 fetch_hdr_color(ivec2 pixel);
-vec3 fetch_normal(ivec2 pixel);
-uint fetch_material_idx(ivec2 pixel);
-float fetch_depth(ivec2 pixel);
-
 bool owns_material_edge(uint center_idx, uint neighbor_idx);
-
-float detect_material_edge(ivec2 pixel);
+float detect_material_edge(ivec2 pixel, uint center_material_idx);
 
 
 void main()
 {
     ivec2 pixel = ivec2(gl_FragCoord.xy);
 
-    float material_edge = detect_material_edge(pixel);
+    uint material_idx = texel_fetch_u(material_buffer_image_idx, pixel).r;
+    float material_edge = detect_material_edge(pixel, material_idx);
 
-    vec3 hdr_color = fetch_hdr_color(pixel);
-    vec3 color = mix(hdr_color, vec3(0.0, 0.0, 0.0), material_edge);
+    vec3 hdr_color = texel_fetch(color_buffer_image_idx, pixel).rgb;
+    vec3 color = mix(hdr_color, outline_color_vec4(material_idx).rgb, material_edge);
 
     out_color_buffer = vec4(color, 1.0);
-}
-
-
-uint fetch_material_idx(ivec2 pixel)
-{
-    return texelFetch(
-        usampler2D(
-            uimages[material_buffer_image_idx],
-            samplers[material_buffer_sampler_idx]
-        ),
-        pixel,
-        0
-    ).r;
-}
-
-
-vec3 fetch_hdr_color(ivec2 pixel)
-{
-    return texelFetch(
-        sampler2D(
-            images[color_buffer_image_idx],
-            samplers[color_buffer_sampler_idx]
-        ),
-        pixel,
-        0
-    ).rgb;
-}
-
-
-float fetch_depth(ivec2 pixel)
-{
-    return texelFetch(
-        sampler2D(
-            images[depth_buffer_image_idx],
-            samplers[depth_buffer_sampler_idx]
-        ),
-        pixel,
-        0
-    ).r;
-}
-
-
-vec3 fetch_normal(ivec2 pixel)
-{
-    vec2 encoded = texelFetch(
-        sampler2D(
-            images[normal_buffer_image_idx],
-            samplers[normal_buffer_sampler_idx]
-        ),
-        pixel,
-        0
-    ).rg;
-
-    return decode_octahedral_normal(encoded);
 }
 
 
@@ -130,9 +66,8 @@ bool owns_material_edge(uint center_idx, uint neighbor_idx)
 }
 
 
-float detect_material_edge(ivec2 pixel)
+float detect_material_edge(ivec2 pixel, uint center_material_idx)
 {
-    uint center_material_idx = fetch_material_idx(pixel);
     if (center_material_idx == invalid_material_idx)
         return 0.0;
 
@@ -150,7 +85,7 @@ float detect_material_edge(ivec2 pixel)
     for (int i = 0; i < 4; ++i)
     {
         ivec2 neighbor_pixel = clamp_pixel(pixel + offsets[i], texture_size);
-        uint neighbor_material_idx = fetch_material_idx(neighbor_pixel);
+        uint neighbor_material_idx = texel_fetch_u(material_buffer_image_idx, neighbor_pixel).r;
 
         if (owns_material_edge(center_material_idx, neighbor_material_idx))
         {
