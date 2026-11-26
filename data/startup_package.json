@@ -70,8 +70,10 @@
         "g": 0,
         "b": 0
       },
-      "outline_priority": 100,
-      "outline_group": 3
+      "outline_depth_threshold": 0.01,
+      "outline_depth_softness": 0.005,
+      "outline_priority": 1,
+      "outline_group": 2
     },
     {
       "id": "metadata::resource_package::default_character_clothes_material_id",
@@ -92,8 +94,10 @@
         "g": 0,
         "b": 0
       },
-      "outline_priority": 1,
-      "outline_group": 1
+      "outline_depth_threshold": 0.01,
+      "outline_depth_softness": 0.005,
+      "outline_priority": 10,
+      "outline_group": 3
     },
     {
       "id": "metadata::resource_package::default_character_hair_material_id",
@@ -114,8 +118,10 @@
         "g": 0,
         "b": 0
       },
-      "outline_priority": 1,
-      "outline_group": 2
+      "outline_depth_threshold": 0.00,
+      "outline_depth_softness": 0.005,
+      "outline_priority": 200,
+      "outline_group": 0
     }
   ],
 

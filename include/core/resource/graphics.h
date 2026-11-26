@@ -220,6 +220,8 @@ namespace resource
             f32 shadow_threshold;
             f32 shadow_softness;
             math::linear_color_t outline_color;
+            f32 outline_depth_threshold;
+            f32 outline_depth_softness;
             u16 outline_priority;
             u16 outline_group;
         };
@@ -236,6 +238,8 @@ namespace resource
         f32 shadow_threshold;
         f32 shadow_softness;
         math::linear_color_t outline_color;
+        f32 outline_depth_threshold;
+        f32 outline_depth_softness;
         u16 outline_priority;
         u16 outline_group;
         u16 descriptor_index;

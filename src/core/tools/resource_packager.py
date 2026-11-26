@@ -216,6 +216,8 @@ def process_material_setups(array, output_file):
         shadow_threshold = get_value(element, "shadow_threshold", 0.5, 0)
         shadow_softness = get_value(element, "shadow_softness", 0.01, 0)
         outline_color = get_value(element, "outline_color", default_black_color, 0)
+        outline_depth_threshold = get_value(element, "outline_depth_threshold", 0.01, 0)
+        outline_depth_softness = get_value(element, "outline_depth_softness", 0.005, 0)
         outline_priority = get_value(element, "outline_priority", 0, 0)
         outline_group = get_value(element, "outline_group", 0, 0)
 
@@ -226,8 +228,10 @@ def process_material_setups(array, output_file):
         output_file.write(struct.pack('<f', shadow_threshold)) #24
         output_file.write(struct.pack('<f', shadow_softness)) #28
         output_file.write(pack_linear_color(outline_color)) #36
-        output_file.write(struct.pack('<H', outline_priority)) #38
-        output_file.write(struct.pack('<H', outline_group)) #40
+        output_file.write(struct.pack('<f', outline_depth_threshold)) #40
+        output_file.write(struct.pack('<f', outline_depth_softness)) #44
+        output_file.write(struct.pack('<H', outline_priority)) #46
+        output_file.write(struct.pack('<H', outline_group)) #48
 
     return
 

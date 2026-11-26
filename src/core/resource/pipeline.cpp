@@ -111,7 +111,7 @@ static b8 create_graphics_handle(resource::pipeline_t *pipeline, const resource:
     _.depth_stencil_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     _.depth_stencil_state.depthTestEnable = setup->depth_test_enabled;
     _.depth_stencil_state.depthWriteEnable = setup->depth_write_enabled;
-    _.depth_stencil_state.depthCompareOp = VK_COMPARE_OP_LESS;
+    _.depth_stencil_state.depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
     _.color_blend_state.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     _.color_blend_state.pAttachments = _.blend_attachments;
     _.color_blend_state.blendConstants[0] = 1.0f;

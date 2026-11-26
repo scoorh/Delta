@@ -10,6 +10,10 @@ const uint invalid_material_idx = 0xffffu;
 const float inverse_255 = 1.0 / 255.0;
 
 
+// ==================================================
+// frame uniform
+// ==================================================
+
 #ifdef frame_data_descriptor
 #define frame_uniform(_set_, _binding_, _access_) \
 layout(std140, set = _set_, binding = _binding_) uniform _access_ frame_uniform_t { \
@@ -37,8 +41,14 @@ layout(std140, set = _set_, binding = _binding_) uniform _access_ frame_uniform_
 #define camera_position _frame_uniform.camera_position_
 #define camera_near_z _frame_uniform.packed1.x
 #define camera_far_z _frame_uniform.packed1.y
+#define camera_depth_mul _frame_uniform.inverse_projection[11]
+#define camera_depth_add _frame_uniform.inverse_projection[15]
 #endif
 
+
+// ==================================================
+// image data
+// ==================================================
 
 #ifdef image_data_descriptor
 #define image_array(_set_, _binding_) \
@@ -55,6 +65,10 @@ layout(set = _set_, binding = _binding_) uniform sampler samplers[];
 
 #endif
 
+
+// ==================================================
+// ui instance data
+// ==================================================
 
 #ifdef ui_data_descriptor
 #define ui_instance_ssbo(_set_, _binding_, _access_) \
@@ -75,6 +89,10 @@ layout(set = _set_, binding = _binding_) buffer _access_ ui_instance_ssbo_t { \
 #define interaction_id (_ui_instance_ssbo.array[gl_InstanceIndex].packed1 & 0xffff)
 #endif
 
+
+// ==================================================
+// mesh vertex ssbo
+// ==================================================
 
 #ifdef mesh_data_descriptor
 #define mesh_vertex_ssbo_array(_set_, _binding_, _access_) \
@@ -100,6 +118,10 @@ layout(set = _set_, binding = _binding_) buffer _access_ mesh_vertex_ssbo_array_
 #endif
 
 
+// ==================================================
+// material data
+// ==================================================
+
 #ifdef mesh_data_descriptor
 #define material_ssbo(_set_, _binding_, _access_) \
 struct material_t { \
@@ -108,10 +130,9 @@ struct material_t { \
     float shadow_threshold; \
     float shadow_softness; \
     uvec2 outline_color; \
+    vec2 outline_depth_threshold_sq; \
     uint packed1; \
-    uint _pad0; \
     uint _pad1; \
-    uint _pad2; \
 }; \
 layout(set = _set_, binding = _binding_) buffer _access_ material_ssbo_t { \
     material_t array[]; \
@@ -120,9 +141,9 @@ layout(set = _set_, binding = _binding_) buffer _access_ material_ssbo_t { \
 
 #define shadow_threshold(material_idx) _material_ssbo.array[material_idx].shadow_threshold
 #define shadow_softness(material_idx) _material_ssbo.array[material_idx].shadow_softness
+#define outline_depth_threshold_sq(material_idx) _material_ssbo.array[material_idx].outline_depth_threshold_sq
 #define outline_priority(material_idx) (_material_ssbo.array[material_idx].packed1 & 0x0000ffffu)
 #define outline_group(material_idx) ((_material_ssbo.array[material_idx].packed1 & 0xffff0000u) >> 16)
-
 
 #define color_vec4(material_idx) \
     vec4(unpackHalf2x16(_material_ssbo.array[material_idx].color.x), \
@@ -140,6 +161,10 @@ layout(set = _set_, binding = _binding_) buffer _access_ material_ssbo_t { \
 
 #endif
 
+
+// ==================================================
+// mesh instance data
+// ==================================================
 
 #if defined(mesh_data_descriptor) || defined(cull_mesh_data_descriptor)
 #define mesh_instance_ssbo(_set_, _binding_, _access_) \
@@ -174,6 +199,10 @@ layout(set = _set_, binding = _binding_) buffer _access_ mesh_instance_ssbo_t { 
 
 #endif
 
+
+// ==================================================
+// indirect draw data
+// ==================================================
 
 #if defined(mesh_data_descriptor) || defined(cull_mesh_data_descriptor)
 #define mesh_instance_index_ssbo(_set_, _binding_, _access_) \
@@ -222,6 +251,10 @@ layout(set = _set_, binding = _binding_) buffer _access_ mesh_indirect_draw_cmd_
 #endif
 
 
+// ==================================================
+// helper functions
+// ==================================================
+
 vec2 encode_octahedral_normal(vec3 normal)
 {
     normal /= abs(normal.x) + abs(normal.y) + abs(normal.z);
@@ -248,10 +281,9 @@ vec3 aces_tonemap(vec3 color)
 }
 
 
-float linearize_depth(float depth, float near_z, float far_z)
+float linearize_depth(float depth, float near_z)
 {
-    return (near_z * far_z) /
-           (far_z - depth * (far_z - near_z));
+    return near_z / depth;
 }
 
 
@@ -267,4 +299,10 @@ vec3 reconstruct_view_position(ivec2 pixel, ivec2 size_, float depth, mat4 inver
     vec2 ndc = uv * 2.0 - 1.0;
     vec4 position_ = inverse_projection_ * vec4(ndc, depth, 1.0);
     return position_.xyz / position_.w;
+}
+
+
+float inverse_lerp(float v, float a, float b)
+{
+    return (v - a) / (b - a);
 }

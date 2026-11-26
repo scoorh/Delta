@@ -26,8 +26,10 @@ namespace resource::material
         material->shadow_threshold = setup->shadow_threshold;
         material->shadow_softness = setup->shadow_softness;
         material->outline_color = setup->outline_color;
-        material->outline_group = setup->outline_group;
+        material->outline_depth_softness = setup->outline_depth_softness;
+        material->outline_depth_threshold = setup->outline_depth_threshold;
         material->outline_priority = setup->outline_priority;
+        material->outline_group = setup->outline_group;
         material->descriptor_index = (u16) memory::resource_pool::get_index(&materials, material);
 
 

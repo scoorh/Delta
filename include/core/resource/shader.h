@@ -52,8 +52,6 @@ namespace resource
                 {
                     f32 camera_near_z;
                     f32 camera_far_z;
-                    f32 _pad0;
-                    f32 _pad1;
                 };
             };
         };
@@ -71,7 +69,7 @@ namespace resource
             f32 shadow_threshold;
             f32 shadow_softness;
             math::linear_color_t outline_color;
-
+            math::vector2_t depth_threshold_sq;
             union
             {
                 u32 packed1;
@@ -81,10 +79,7 @@ namespace resource
                     u16 outline_group;
                 };
             };
-
-            u32 _pad0;
             u32 _pad1;
-            u32 _pad2;
         };
 
         static_assert(sizeof(material_t) % 16 == 0);
@@ -449,9 +444,6 @@ namespace resource
                     struct
                     {
                         f32 exposure;
-                        f32 normal_threshold;
-                        f32 depth_threshold;
-                        f32 outline_strength;
                     } post_process;
                 };
             };
@@ -489,4 +481,15 @@ namespace resource::descriptor_set_layout
 namespace resource::pipeline_layout
 {
     void initialize();
+}
+
+
+namespace resource::shader
+{
+    inline math::vector2_t make_material_threshold_sq(const f32 threshold, const f32 softness)
+    {
+        const f32 a = threshold * 6.0f;
+        const f32 b = (threshold + softness) * 6.0f;
+        return { a * a, b * b };
+    }
 }
