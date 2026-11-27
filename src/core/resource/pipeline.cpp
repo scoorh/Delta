@@ -150,14 +150,14 @@ static b8 create_graphics_handle(resource::pipeline_t *pipeline, const resource:
             _.rendering_state.colorAttachmentCount = 5;
             _.rendering_state.depthAttachmentFormat = gpu_info::format->depth_attachment_image;
             _.attachment_formats[0] = gpu_info::format->color_attachment_image;
-            _.attachment_formats[1] = gpu_info::format->mrao_attachment_image;
+            _.attachment_formats[1] = gpu_info::format->mraos_attachment_image;
             _.attachment_formats[2] = gpu_info::format->material_attachment_image;
             _.attachment_formats[3] = gpu_info::format->normal_attachment_image;
             _.attachment_formats[4] = gpu_info::format->interaction_attachment_image;
 
             if (setup->write_to_color_buffer)
                 _.blend_attachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            if (setup->write_to_mrao_buffer)
+            if (setup->write_to_mraos_buffer)
                 _.blend_attachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             if (setup->write_to_material_buffer)
                 _.blend_attachments[2].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;

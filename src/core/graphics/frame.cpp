@@ -34,7 +34,7 @@ namespace renderer
         const auto normal_attachment_image_ = resource::image::find(resource::normal_attachment_image_id);
         const auto depth_attachment_image_ = resource::image::find(resource::depth_attachment_image_id);
         const auto material_attachment_image_ = resource::image::find(resource::material_attachment_image_id);
-        const auto mrao_attachment_image_ = resource::image::find(resource::mrao_attachment_image_id);
+        const auto mraos_attachment_image_ = resource::image::find(resource::mraos_attachment_image_id);
 
         const auto linear_linear_linear_sampler = resource::image_sampler::find(metadata::resource_package::linear_linear_linear_sampler_id);
         const auto nearest_nearest_nearest_sampler = resource::image_sampler::find(metadata::resource_package::nearest_nearest_nearest_sampler_id);
@@ -69,8 +69,8 @@ namespace renderer
             frame->pipeline.post_process.push_constant.depth_attachment_sampler_idx = linear_linear_linear_sampler->descriptor_index;
             frame->pipeline.post_process.push_constant.material_attachment_image_idx = material_attachment_image_->descriptor_index;
             frame->pipeline.post_process.push_constant.material_attachment_sampler_idx = linear_linear_linear_sampler->descriptor_index;
-            frame->pipeline.post_process.push_constant.mrao_attachment_image_idx = mrao_attachment_image_->descriptor_index;
-            frame->pipeline.post_process.push_constant.mrao_attachment_sampler_idx = linear_linear_linear_sampler->descriptor_index;
+            frame->pipeline.post_process.push_constant.mraos_attachment_image_idx = mraos_attachment_image_->descriptor_index;
+            frame->pipeline.post_process.push_constant.mraos_attachment_sampler_idx = linear_linear_linear_sampler->descriptor_index;
         }
     }
 }

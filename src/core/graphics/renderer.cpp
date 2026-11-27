@@ -89,7 +89,7 @@ static void geometry_pass(renderer::frame_t *frame)
                                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
 
     resource::image::layout_transition(&attachment_image_barriers[1],
-                                       renderer::attachment_image.mrao, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       renderer::attachment_image.mraos, VK_IMAGE_ASPECT_COLOR_BIT,
                                        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
@@ -138,7 +138,7 @@ static void geometry_pass(renderer::frame_t *frame)
     color_attachment_info[0].clearValue.color.float32[3] = 1.0f;
 
     color_attachment_info[1].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    color_attachment_info[1].imageView = renderer::attachment_image_view.mrao;
+    color_attachment_info[1].imageView = renderer::attachment_image_view.mraos;
     color_attachment_info[1].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
     color_attachment_info[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     color_attachment_info[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -255,7 +255,7 @@ static void post_process_pass(renderer::frame_t *frame)
                                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
 
     resource::image::layout_transition(&attachment_image_barriers[2],
-                                       renderer::attachment_image.mrao, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       renderer::attachment_image.mraos, VK_IMAGE_ASPECT_COLOR_BIT,
                                        VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
                                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);

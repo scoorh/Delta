@@ -37,9 +37,10 @@ namespace gpu_info
         VkFormat normal_attachment_image;
         VkFormat color_attachment_image;
         VkFormat material_attachment_image;
-        VkFormat mrao_attachment_image;
+        VkFormat mraos_attachment_image;
 
         VkFormatProperties R8G8B8A8_UNORM;
+        VkFormatProperties R8G8B8A8_SRGB;
         VkFormatProperties R16G16B16A16_SFLOAT;
         VkFormatProperties R16G16_SNORM;
         VkFormatProperties R32_UINT;
@@ -60,7 +61,6 @@ namespace gpu_info
         b8 descriptor_binding_variable_descriptor_count;
         b8 descriptor_binding_sampled_image_update_after_bind;
         b8 descriptor_binding_storage_buffer_update_after_bind;
-        b8 shader_sampled_image_array_non_uniform_indexing;
         b8 descriptor_indexing;
         b8 sampler_anisotropy;
         b8 independent_blend;
@@ -73,6 +73,7 @@ namespace gpu_info
         u16 min_uniform_buffer_offset_alignment;
         u16 min_storage_buffer_offset_alignment;
         u8 max_color_attachments;
+        u8 max_fragment_output_attachments;
     };
 
 

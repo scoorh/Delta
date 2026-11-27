@@ -174,16 +174,16 @@ static void create_other_attachments()
     renderer::attachment_image_view.material = image->view;
 
 
-    image_setup.id = resource::mrao_attachment_image_id;
-    image_setup.format = gpu_info::format->mrao_attachment_image;
+    image_setup.id = resource::mraos_attachment_image_id;
+    image_setup.format = gpu_info::format->mraos_attachment_image;
     image_setup.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     image_setup.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 
     image = resource::image::create(&image_setup);
     if (nullptr == image)
     {
-        logger::critical_error(logger::code::create_mrao_attachment_image, 0);
+        logger::critical_error(logger::code::create_mraos_attachment_image, 0);
     }
-    renderer::attachment_image.mrao = image->handle;
-    renderer::attachment_image_view.mrao = image->view;
+    renderer::attachment_image.mraos = image->handle;
+    renderer::attachment_image_view.mraos = image->view;
 }

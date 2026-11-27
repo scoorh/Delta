@@ -40,7 +40,7 @@ namespace logger
         vkCreateSampler,
         vkCreateBuffer,
         vkAllocateMemory,
-        create_mrao_attachment_image,
+        create_mraos_attachment_image,
         create_depth_attachment_image,
         create_normal_attachment_image,
         create_color_attachment_image,

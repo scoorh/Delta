@@ -105,7 +105,7 @@
       "write_to_color_attachment": 1,
       "write_to_normal_attachment": 1,
       "write_to_material_attachment": 1,
-      "write_to_mrao_attachment": 1
+      "write_to_mraos_attachment": 1
     }
   ]
 }

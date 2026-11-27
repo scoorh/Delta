@@ -34,7 +34,7 @@ namespace renderer
     struct image_t
     {
         VkImage color;
-        VkImage mrao;
+        VkImage mraos;
         VkImage material;
         VkImage interaction;
         VkImage normal;
@@ -43,7 +43,7 @@ namespace renderer
     struct image_view_t
     {
         VkImageView color;
-        VkImageView mrao;
+        VkImageView mraos;
         VkImageView material;
         VkImageView interaction;
         VkImageView normal;

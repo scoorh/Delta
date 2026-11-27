@@ -63,7 +63,6 @@ static b8 validate(const gpu_info::aggregate_t *t)
     if (!t->features.descriptor_binding_sampled_image_update_after_bind) return false;
     if (!t->features.descriptor_binding_storage_buffer_update_after_bind) return false;
     if (!t->features.descriptor_binding_variable_descriptor_count) return false;
-    if (!t->features.shader_sampled_image_array_non_uniform_indexing) return false;
     if (!t->features.descriptor_indexing) return false;
     if (!t->features.sampler_anisotropy) return false;
     if (!t->features.independent_blend) return false;
@@ -73,9 +72,10 @@ static b8 validate(const gpu_info::aggregate_t *t)
     if (t->format.interaction_attachment_image == VK_FORMAT_UNDEFINED) return false;
     if (t->format.normal_attachment_image == VK_FORMAT_UNDEFINED) return false;
     if (t->format.color_attachment_image == VK_FORMAT_UNDEFINED) return false;
-    if (t->format.mrao_attachment_image == VK_FORMAT_UNDEFINED) return false;
+    if (t->format.mraos_attachment_image == VK_FORMAT_UNDEFINED) return false;
 
     if (t->limit.max_color_attachments < 5) return false;
+    if (t->limit.max_fragment_output_attachments < 5) return false;
 
     if (t->memory.device_local_type_bits == 0) return false;
 
@@ -107,6 +107,7 @@ static void get_basic_properties_and_limits(gpu_info::aggregate_t *t)
     t->limit.min_uniform_buffer_offset_alignment = static_cast<u16>(device_properties2.properties.limits.minUniformBufferOffsetAlignment);
     t->limit.min_storage_buffer_offset_alignment = static_cast<u16>(device_properties2.properties.limits.minStorageBufferOffsetAlignment);
     t->limit.max_color_attachments = static_cast<u8>(device_properties2.properties.limits.maxColorAttachments);
+    t->limit.max_fragment_output_attachments = static_cast<u8>(device_properties2.properties.limits.maxFragmentOutputAttachments );
 }
 
 
@@ -133,7 +134,6 @@ static void get_features(gpu_info::aggregate_t *t)
     t->features.descriptor_binding_variable_descriptor_count = features12.descriptorBindingVariableDescriptorCount;
     t->features.descriptor_binding_sampled_image_update_after_bind = features12.descriptorBindingSampledImageUpdateAfterBind;
     t->features.descriptor_binding_storage_buffer_update_after_bind = features12.descriptorBindingStorageBufferUpdateAfterBind;
-    t->features.shader_sampled_image_array_non_uniform_indexing = features12.shaderSampledImageArrayNonUniformIndexing;
     t->features.descriptor_indexing = features12.descriptorIndexing;
     t->features.sampler_anisotropy = features2.features.samplerAnisotropy;
     t->features.independent_blend = features2.features.independentBlend;
@@ -208,6 +208,7 @@ static void get_formats(gpu_info::aggregate_t *t)
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R16_UINT, &t->format.R16_UINT);
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R16G16_SNORM, &t->format.R16G16_SNORM);
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R8G8B8A8_UNORM, &t->format.R8G8B8A8_UNORM);
+    vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R8G8B8A8_SRGB, &t->format.R8G8B8A8_SRGB);
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R16G16B16A16_SFLOAT, &t->format.R16G16B16A16_SFLOAT);
 
     t->format.depth_attachment_image = VK_FORMAT_UNDEFINED;
@@ -215,7 +216,7 @@ static void get_formats(gpu_info::aggregate_t *t)
     t->format.normal_attachment_image = VK_FORMAT_UNDEFINED;
     t->format.color_attachment_image = VK_FORMAT_UNDEFINED;
     t->format.material_attachment_image = VK_FORMAT_UNDEFINED;
-    t->format.mrao_attachment_image = VK_FORMAT_UNDEFINED;
+    t->format.mraos_attachment_image = VK_FORMAT_UNDEFINED;
 
     constexpr u32 format_test_count = 6;
     struct _format_test_t
@@ -247,8 +248,8 @@ static void get_formats(gpu_info::aggregate_t *t)
     ++d;
 
     format_test[d].dst = &t->format.color_attachment_image;
-    format_test[d].format = VK_FORMAT_R16G16B16A16_SFLOAT;
-    format_test[d].format_properties = &t->format.R16G16B16A16_SFLOAT;
+    format_test[d].format = VK_FORMAT_R8G8B8A8_SRGB;
+    format_test[d].format_properties = &t->format.R8G8B8A8_SRGB;
     format_test[d].required_flags = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
     ++d;
 
@@ -258,7 +259,7 @@ static void get_formats(gpu_info::aggregate_t *t)
     format_test[d].required_flags = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
     ++d;
 
-    format_test[d].dst = &t->format.mrao_attachment_image;
+    format_test[d].dst = &t->format.mraos_attachment_image;
     format_test[d].format = VK_FORMAT_R8G8B8A8_UNORM;
     format_test[d].format_properties = &t->format.R8G8B8A8_UNORM;
     format_test[d].required_flags = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;

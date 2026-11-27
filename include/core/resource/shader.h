@@ -439,8 +439,8 @@ namespace resource
                 u32 depth_attachment_sampler_idx;
                 u32 material_attachment_image_idx;
                 u32 material_attachment_sampler_idx;
-                u32 mrao_attachment_image_idx;
-                u32 mrao_attachment_sampler_idx;
+                u32 mraos_attachment_image_idx;
+                u32 mraos_attachment_sampler_idx;
                 union
                 {
                     struct

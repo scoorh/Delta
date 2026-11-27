@@ -338,7 +338,7 @@ def process_pipeline_setups(array, output_file):
         write_to_color_attachment = 0
         write_to_normal_attachment = 0
         write_to_material_attachment = 0
-        write_to_mrao_attachment = 0
+        write_to_mraos_attachment = 0
 
         if is_compute == 0:
             primitive_restart_enabled = get_value(element, "primitive_restart_enabled", 0, 0)
@@ -355,7 +355,7 @@ def process_pipeline_setups(array, output_file):
             write_to_color_attachment = get_value(element, "write_to_color_attachment", 0, 0)
             write_to_normal_attachment = get_value(element, "write_to_normal_attachment", 0, 0)
             write_to_material_attachment = get_value(element, "write_to_material_attachment", 0, 0)
-            write_to_mrao_attachment = get_value(element, "write_to_mrao_attachment", 0, 0)
+            write_to_mraos_attachment = get_value(element, "write_to_mraos_attachment", 0, 0)
         else:
             compute_shader_id = get_value(element, "compute_shader_id", 0, 1)
 
@@ -379,7 +379,7 @@ def process_pipeline_setups(array, output_file):
         output_file.write(struct.pack('<B', depth_write_enabled)) #26
         output_file.write(struct.pack('<B', layout_idx)) #27
         output_file.write(struct.pack('<B', write_to_color_attachment)) #28
-        output_file.write(struct.pack('<B', write_to_mrao_attachment)) #29
+        output_file.write(struct.pack('<B', write_to_mraos_attachment)) #29
         output_file.write(struct.pack('<B', write_to_material_attachment)) #30
         output_file.write(struct.pack('<B', write_to_normal_attachment)) #31
         output_file.write(struct.pack('<B', write_to_interaction_attachment)) #32

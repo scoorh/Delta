@@ -6,8 +6,11 @@
 #endif
 
 
+const float min_roughness = 0.045;
 const uint invalid_material_idx = 0xffffu;
 const float inverse_255 = 1.0 / 255.0;
+const float pi = 3.14159265359;
+const float inverse_pi = 0.31830988618379067154;
 
 
 // ==================================================
@@ -41,8 +44,8 @@ layout(std140, set = _set_, binding = _binding_) uniform _access_ frame_uniform_
 #define camera_position _frame_uniform.camera_position_
 #define camera_near_z _frame_uniform.packed1.x
 #define camera_far_z _frame_uniform.packed1.y
-#define camera_depth_mul _frame_uniform.inverse_projection[11]
-#define camera_depth_add _frame_uniform.inverse_projection[15]
+#define camera_depth_mul _frame_uniform.inverse_projection[2][3]
+#define camera_depth_add _frame_uniform.inverse_projection[3][3]
 #endif
 
 
@@ -249,60 +252,3 @@ layout(set = _set_, binding = _binding_) buffer _access_ mesh_indirect_draw_cmd_
 #define draw_vertex_offset(idx) _mesh_indirect_draw_cmd_ssbo.array[idx].vertex_offset
 #define draw_first_instance(idx) _mesh_indirect_draw_cmd_ssbo.array[idx].first_instance
 #endif
-
-
-// ==================================================
-// helper functions
-// ==================================================
-
-vec2 encode_octahedral_normal(vec3 normal)
-{
-    normal /= abs(normal.x) + abs(normal.y) + abs(normal.z);
-    vec2 p = normal.xy;
-    vec2 folded = (1.0 - abs(p.yx)) * mix(vec2(-1.0), vec2(1.0), greaterThanEqual(p, vec2(0.0)));
-    return mix(p, folded, float(normal.z < 0.0));
-}
-
-
-vec3 decode_octahedral_normal(vec2 encoded)
-{
-    vec3 n = vec3(encoded, 1.0 - abs(encoded.x) - abs(encoded.y));
-    float t = max(-n.z, 0.0);
-    n.xy += mix(vec2(t), vec2(-t), greaterThanEqual(n.xy, vec2(0.0)));
-    return normalize(n);
-}
-
-
-vec3 aces_tonemap(vec3 color)
-{
-    vec3 numerator = color * (2.51 * color + 0.03);
-    vec3 denominator = color * (2.43 * color + 0.59) + 0.14;
-    return clamp(numerator / denominator, 0.0, 1.0);
-}
-
-
-float linearize_depth(float depth, float near_z)
-{
-    return near_z / depth;
-}
-
-
-ivec2 clamp_pixel(ivec2 p, ivec2 s)
-{
-    return clamp(p, ivec2(0), s - ivec2(1));
-}
-
-
-vec3 reconstruct_view_position(ivec2 pixel, ivec2 size_, float depth, mat4 inverse_projection_)
-{
-    vec2 uv = (vec2(pixel) + 0.5) / vec2(size_);
-    vec2 ndc = uv * 2.0 - 1.0;
-    vec4 position_ = inverse_projection_ * vec4(ndc, depth, 1.0);
-    return position_.xyz / position_.w;
-}
-
-
-float inverse_lerp(float v, float a, float b)
-{
-    return (v - a) / (b - a);
-}

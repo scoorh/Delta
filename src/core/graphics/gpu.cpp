@@ -94,7 +94,6 @@ static void create_device_handle()
     features12.descriptorBindingVariableDescriptorCount = VK_TRUE;
     features12.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
     features12.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
-    features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
     features12.descriptorIndexing = VK_TRUE;
     features13.synchronization2 = VK_TRUE;
     features13.dynamicRendering = VK_TRUE;

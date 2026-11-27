@@ -5,58 +5,94 @@
 #define mesh_data_descriptor
 #include "types.glsl"
 
-
 frame_uniform(0, 0, readonly)
 material_ssbo(1, 3, readonly)
 image_array(2, 0)
 uimage_array(2, 0)
 sampler_array(2, 1)
 
+#include "functions.glsl"
+
 
 layout(push_constant) uniform PushConstant
 {
-    uint color_buffer_image_idx;
-    uint color_buffer_sampler_idx;
-    uint normal_buffer_image_idx;
-    uint normal_buffer_sampler_idx;
-    uint depth_buffer_image_idx;
-    uint depth_buffer_sampler_idx;
-    uint material_buffer_image_idx;
-    uint material_buffer_sampler_idx;
+    uint color_attachment_image_idx;
+    uint color_attachment_sampler_idx;
+    uint normal_attachment_image_idx;
+    uint normal_attachment_sampler_idx;
+    uint depth_attachment_image_idx;
+    uint depth_attachment_sampler_idx;
+    uint material_attachment_image_idx;
+    uint material_attachment_sampler_idx;
+    uint mraos_attachment_image_idx;
+    uint mraos_attachment_sampler_idx;
     float hdr_exposure;
 };
 
 
-layout(location = 0) out vec4 out_color_buffer;
+layout(location = 0) out vec4 out_color_attachment;
 
 
-vec2 outline_line_filter(ivec2 center_pixel, ivec2 image_size, uint center_material_idx);
+//vec2 outline_line_filter(ivec2 center_pixel, ivec2 image_size, uint center_material_idx);
 
 
 void main()
 {
     ivec2 pixel = ivec2(gl_FragCoord.xy);
-    ivec2 image_size = ivec2(viewport_width, viewport_height);
 
-    uint material_idx = texel_fetch_u(material_buffer_image_idx, pixel).r;
+    float depth = texel_fetch(depth_attachment_image_idx, pixel).r;
+
+    //vec3 hdr_color = texel_fetch(color_attachment_image_idx, pixel).rgb;
+    //hdr_color *= exp2(hdr_exposure);
+    //vec3 ldr_color = aces_tonemap(hdr_color);
+
+    if (depth == 0.0)
+    {
+        //out_color_attachment = vec4(ldr_color, 1.0);
+        return;
+    }
+
+    uint material_idx = texel_fetch_u(material_attachment_image_idx, pixel).r;
 
 
-    vec3 hdr_color = texel_fetch(color_buffer_image_idx, pixel).rgb;
-    hdr_color *= exp2(hdr_exposure);
-    vec3 ldr_color = aces_tonemap(hdr_color);
+    surface_t surface;
+    surface.position = reconstruct_view_position(gl_FragCoord.xy, depth);
+    surface.view_direction = normalize(-surface.position);
+    surface.normal = decode_octahedral_normal(texel_fetch(normal_attachment_image_idx, pixel).rg);
+    surface.albedo = texel_fetch(color_attachment_image_idx, pixel).rgb;
+    vec4 mraos = texel_fetch(mraos_attachment_image_idx, pixel).rgba;
+    surface.metallic = mraos.r;
+    surface.roughness = clamp(mraos.g, 0.045, 1.0);
+    surface.ao = mraos.b;
+    surface.specular = mraos.a;
+    surface.alpha = surface.roughness * surface.roughness;
+    surface.alpha2 = surface.alpha * surface.alpha;
+    surface.specular_mul = 0.5 * inverse_pi * surface.alpha2;
+    surface.F0 = mix(vec3(0.08 * surface.specular), surface.albedo, surface.metallic);
+    surface.diffuse_color = surface.albedo * (1.0 - surface.metallic) * inverse_pi;
+    surface.NoV = clamp(dot(surface.normal, surface.view_direction), 0.0, 1.0);
+    surface.visibility_mad = vec2(2.0 * surface.NoV * (1.0 - surface.alpha) + surface.alpha, surface.NoV * surface.alpha);
 
-    vec3 out_color = ldr_color;
 
+    vec3 L = normalize(mat3(view_matrix) * -global_light_direction.xyz);
+    const vec3 light_color = vec3(1.0);
+    const float light_intensity = 3.0;
+
+    vec3 radiance = light_color * light_intensity;
+    vec3 direct = evaluate_brdf(surface, L, radiance);
+    vec3 ambient = surface.albedo * (1.0 - surface.metallic) * surface.ao * 0.03;
+
+    out_color_attachment = vec4(direct + ambient, 1.0);
+    /*
     if (material_idx != invalid_material_idx)
     {
         vec2 outline_line = outline_line_filter(pixel, image_size, material_idx);
         out_color = mix(ldr_color, outline_color_vec4(material_idx).rgb, max(outline_line.x, outline_line.y));
     }
-
-    out_color_buffer = vec4(out_color, 1.0);
+    */
 }
 
-
+/*
 bool owns_material_edge(uint center_group, uint center_priority, uint neighbor_material_idx)
 {
     if (neighbor_material_idx == invalid_material_idx)
@@ -146,3 +182,4 @@ vec2 outline_line_filter(ivec2 center_pixel, ivec2 image_size, uint center_mater
 
     return vec2(depth_line, material_line);
 }
+*/

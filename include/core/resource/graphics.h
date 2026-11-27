@@ -13,7 +13,7 @@ namespace resource
     constexpr u16 normal_attachment_image_id = 65002;
     constexpr u16 color_attachment_image_id = 65003;
     constexpr u16 material_attachment_image_id = 65004;
-    constexpr u16 mrao_attachment_image_id = 65005;
+    constexpr u16 mraos_attachment_image_id = 65005;
     constexpr u16 frame_data_buffer_id = 65000;
     constexpr u16 frame_data_buffer_id_N = 65005;
     constexpr u16 gpu_transfer_work_staging_buffer_id = 65006;
@@ -185,7 +185,7 @@ namespace resource
             b8 depth_write_enabled;
             u8 layout_idx;
             b8 write_to_color_buffer;
-            b8 write_to_mrao_buffer;
+            b8 write_to_mraos_buffer;
             b8 write_to_material_buffer;
             b8 write_to_normal_buffer;
             b8 write_to_interaction_buffer;
