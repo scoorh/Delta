@@ -70,7 +70,7 @@ static b8 create_graphics_handle(resource::pipeline_t *pipeline, const resource:
 
     struct
     {
-        VkFormat attachment_formats[4];
+        VkFormat attachment_formats[5];
         VkPipelineShaderStageCreateInfo stages[2];
         VkPipelineVertexInputStateCreateInfo vertex_input_state;
         VkPipelineInputAssemblyStateCreateInfo input_assembly_state;
@@ -79,7 +79,7 @@ static b8 create_graphics_handle(resource::pipeline_t *pipeline, const resource:
         VkPipelineMultisampleStateCreateInfo multisample_state;
         VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
         VkPipelineColorBlendStateCreateInfo color_blend_state;
-        VkPipelineColorBlendAttachmentState blend_attachments[4];
+        VkPipelineColorBlendAttachmentState blend_attachments[5];
         VkDynamicState dynamic_states[2];
         VkPipelineDynamicStateCreateInfo dynamic_state;
         VkPipelineRenderingCreateInfo rendering_state;
@@ -118,6 +118,7 @@ static b8 create_graphics_handle(resource::pipeline_t *pipeline, const resource:
     _.color_blend_state.blendConstants[1] = 1.0f;
     _.color_blend_state.blendConstants[2] = 1.0f;
     _.color_blend_state.blendConstants[3] = 1.0f;
+    _.color_blend_state.blendConstants[4] = 1.0f;
     _.dynamic_states[0] = VK_DYNAMIC_STATE_VIEWPORT;
     _.dynamic_states[1] = VK_DYNAMIC_STATE_SCISSOR;
     _.dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
@@ -145,22 +146,25 @@ static b8 create_graphics_handle(resource::pipeline_t *pipeline, const resource:
     {
         case resource::pipeline_layout::draw_mesh::idx:
         case resource::pipeline_layout::draw_ui::idx:
-            _.color_blend_state.attachmentCount = 4;
-            _.rendering_state.colorAttachmentCount = 4;
-            _.rendering_state.depthAttachmentFormat = gpu_info::format->depth_buffer;
-            _.attachment_formats[0] = gpu_info::format->color_buffer;
-            _.attachment_formats[1] = gpu_info::format->material_buffer;
-            _.attachment_formats[2] = gpu_info::format->normal_buffer;
-            _.attachment_formats[3] = gpu_info::format->interaction_buffer;
+            _.color_blend_state.attachmentCount = 5;
+            _.rendering_state.colorAttachmentCount = 5;
+            _.rendering_state.depthAttachmentFormat = gpu_info::format->depth_attachment_image;
+            _.attachment_formats[0] = gpu_info::format->color_attachment_image;
+            _.attachment_formats[1] = gpu_info::format->mrao_attachment_image;
+            _.attachment_formats[2] = gpu_info::format->material_attachment_image;
+            _.attachment_formats[3] = gpu_info::format->normal_attachment_image;
+            _.attachment_formats[4] = gpu_info::format->interaction_attachment_image;
 
             if (setup->write_to_color_buffer)
                 _.blend_attachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            if (setup->write_to_mrao_buffer)
+                _.blend_attachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             if (setup->write_to_material_buffer)
-                _.blend_attachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;
+                _.blend_attachments[2].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;
             if (setup->write_to_normal_buffer)
-                _.blend_attachments[2].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT;
+                _.blend_attachments[3].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT;
             if (setup->write_to_interaction_buffer)
-                _.blend_attachments[3].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;
+                _.blend_attachments[4].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;
 
             break;
 

@@ -30,16 +30,27 @@ namespace renderer
     inline u32 swapchain_image_count = 0;
     inline VkImage swapchain_image_array[max_swapchain_image_count] = {};
     inline VkImageView swapchain_image_view_array[max_swapchain_image_count] = {};
-    inline VkImage color_buffer_image = nullptr;
-    inline VkImage material_buffer_image = nullptr;
-    inline VkImage interaction_buffer_image = nullptr;
-    inline VkImage normal_buffer_image = nullptr;
-    inline VkImage depth_buffer_image = nullptr;
-    inline VkImageView color_buffer_image_view = nullptr;
-    inline VkImageView material_buffer_image_view = nullptr;
-    inline VkImageView interaction_buffer_image_view = nullptr;
-    inline VkImageView normal_buffer_image_view = nullptr;
-    inline VkImageView depth_buffer_image_view = nullptr;
+
+    struct image_t
+    {
+        VkImage color;
+        VkImage mrao;
+        VkImage material;
+        VkImage interaction;
+        VkImage normal;
+        VkImage depth;
+    };
+    struct image_view_t
+    {
+        VkImageView color;
+        VkImageView mrao;
+        VkImageView material;
+        VkImageView interaction;
+        VkImageView normal;
+        VkImageView depth;
+    };
+    inline image_t attachment_image = {};
+    inline image_view_t attachment_image_view = {};
 
     struct frame_t
     {

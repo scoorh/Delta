@@ -13,7 +13,10 @@ layout(location = 0) in flat uint in_material_idx;
 
 
 layout(location = 0) out vec4 out_color_buffer;
-layout(location = 1) out uint out_material_buffer;
+layout(location = 1) out vec4 out_mrao_buffer;
+layout(location = 2) out uint out_material_buffer;
+layout(location = 3) out vec2 out_normal_buffer;
+layout(location = 4) out uint out_interaction_buffer;
 
 
 void main()

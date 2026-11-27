@@ -431,14 +431,16 @@ namespace resource
 
             struct push_constant_t
             {
-                u32 color_buffer_image_idx;
-                u32 color_buffer_sampler_idx;
-                u32 normal_buffer_image_idx;
-                u32 normal_buffer_sampler_idx;
-                u32 depth_buffer_image_idx;
-                u32 depth_buffer_sampler_idx;
-                u32 material_buffer_image_idx;
-                u32 material_buffer_sampler_idx;
+                u32 color_attachment_image_idx;
+                u32 color_attachment_sampler_idx;
+                u32 normal_attachment_image_idx;
+                u32 normal_attachment_sampler_idx;
+                u32 depth_attachment_image_idx;
+                u32 depth_attachment_sampler_idx;
+                u32 material_attachment_image_idx;
+                u32 material_attachment_sampler_idx;
+                u32 mrao_attachment_image_idx;
+                u32 mrao_attachment_sampler_idx;
                 union
                 {
                     struct

@@ -32,11 +32,12 @@ namespace gpu_info
 
     struct format_t
     {
-        VkFormat depth_buffer;
-        VkFormat interaction_buffer;
-        VkFormat normal_buffer;
-        VkFormat color_buffer;
-        VkFormat material_buffer;
+        VkFormat depth_attachment_image;
+        VkFormat interaction_attachment_image;
+        VkFormat normal_attachment_image;
+        VkFormat color_attachment_image;
+        VkFormat material_attachment_image;
+        VkFormat mrao_attachment_image;
 
         VkFormatProperties R8G8B8A8_UNORM;
         VkFormatProperties R16G16B16A16_SFLOAT;
@@ -71,6 +72,7 @@ namespace gpu_info
     {
         u16 min_uniform_buffer_offset_alignment;
         u16 min_storage_buffer_offset_alignment;
+        u8 max_color_attachments;
     };
 
 

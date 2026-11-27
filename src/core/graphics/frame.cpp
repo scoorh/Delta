@@ -30,10 +30,11 @@ namespace renderer
         const auto cull_mesh_pipeline = resource::pipeline::find(metadata::resource_package::cull_mesh_pipeline_id);
         const auto post_process_pipeline = resource::pipeline::find(metadata::resource_package::post_process_pipeline_id);
 
-        const auto color_buffer_image_ = resource::image::find(resource::color_buffer_image_id);
-        const auto normal_buffer_image_ = resource::image::find(resource::normal_buffer_image_id);
-        const auto depth_buffer_image_ = resource::image::find(resource::depth_buffer_image_id);
-        const auto material_buffer_image_ = resource::image::find(resource::material_buffer_image_id);
+        const auto color_attachment_image_ = resource::image::find(resource::color_attachment_image_id);
+        const auto normal_attachment_image_ = resource::image::find(resource::normal_attachment_image_id);
+        const auto depth_attachment_image_ = resource::image::find(resource::depth_attachment_image_id);
+        const auto material_attachment_image_ = resource::image::find(resource::material_attachment_image_id);
+        const auto mrao_attachment_image_ = resource::image::find(resource::mrao_attachment_image_id);
 
         const auto linear_linear_linear_sampler = resource::image_sampler::find(metadata::resource_package::linear_linear_linear_sampler_id);
         const auto nearest_nearest_nearest_sampler = resource::image_sampler::find(metadata::resource_package::nearest_nearest_nearest_sampler_id);
@@ -60,14 +61,16 @@ namespace renderer
 
             frame->pipeline.post_process.post_process_pipeline = post_process_pipeline->handle;
             frame->pipeline.post_process.post_process_pipeline_layout = post_process_pipeline->layout;
-            frame->pipeline.post_process.push_constant.color_buffer_image_idx = color_buffer_image_->descriptor_index;
-            frame->pipeline.post_process.push_constant.color_buffer_sampler_idx = linear_linear_linear_sampler->descriptor_index;
-            frame->pipeline.post_process.push_constant.normal_buffer_image_idx = normal_buffer_image_->descriptor_index;
-            frame->pipeline.post_process.push_constant.normal_buffer_sampler_idx = nearest_nearest_nearest_sampler->descriptor_index;
-            frame->pipeline.post_process.push_constant.depth_buffer_image_idx = depth_buffer_image_->descriptor_index;
-            frame->pipeline.post_process.push_constant.depth_buffer_sampler_idx = linear_linear_linear_sampler->descriptor_index;
-            frame->pipeline.post_process.push_constant.material_buffer_image_idx = material_buffer_image_->descriptor_index;
-            frame->pipeline.post_process.push_constant.material_buffer_sampler_idx = linear_linear_linear_sampler->descriptor_index;
+            frame->pipeline.post_process.push_constant.color_attachment_image_idx = color_attachment_image_->descriptor_index;
+            frame->pipeline.post_process.push_constant.color_attachment_sampler_idx = linear_linear_linear_sampler->descriptor_index;
+            frame->pipeline.post_process.push_constant.normal_attachment_image_idx = normal_attachment_image_->descriptor_index;
+            frame->pipeline.post_process.push_constant.normal_attachment_sampler_idx = nearest_nearest_nearest_sampler->descriptor_index;
+            frame->pipeline.post_process.push_constant.depth_attachment_image_idx = depth_attachment_image_->descriptor_index;
+            frame->pipeline.post_process.push_constant.depth_attachment_sampler_idx = linear_linear_linear_sampler->descriptor_index;
+            frame->pipeline.post_process.push_constant.material_attachment_image_idx = material_attachment_image_->descriptor_index;
+            frame->pipeline.post_process.push_constant.material_attachment_sampler_idx = linear_linear_linear_sampler->descriptor_index;
+            frame->pipeline.post_process.push_constant.mrao_attachment_image_idx = mrao_attachment_image_->descriptor_index;
+            frame->pipeline.post_process.push_constant.mrao_attachment_sampler_idx = linear_linear_linear_sampler->descriptor_index;
         }
     }
 }

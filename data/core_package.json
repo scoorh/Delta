@@ -75,7 +75,7 @@
       "polygon_mode": "metadata::resource_package::polygon_mode_fill",
       "cull_mode": "metadata::resource_package::cull_mode_back_face",
       "front_face": "metadata::resource_package::front_face_clockwise",
-      "write_to_color_buffer": 1
+      "write_to_color_attachment": 1
     },
     {
       "id": "metadata::resource_package::outer_mesh_outline_pipeline_id",
@@ -87,8 +87,8 @@
       "cull_mode": "metadata::resource_package::cull_mode_front_face",
       "front_face": "metadata::resource_package::front_face_clockwise",
       "depth_test_enabled": 1,
-      "write_to_color_buffer": 1,
-      "write_to_material_buffer": 1
+      "write_to_color_attachment": 1,
+      "write_to_material_attachment": 1
     },
     {
       "id": "metadata::resource_package::draw_character_pipeline_id",
@@ -101,10 +101,11 @@
       "front_face": "metadata::resource_package::front_face_clockwise",
       "depth_test_enabled": 1,
       "depth_write_enabled": 1,
-      "write_to_interaction_buffer": 1,
-      "write_to_color_buffer": 1,
-      "write_to_normal_buffer": 1,
-      "write_to_material_buffer": 1
+      "write_to_interaction_attachment": 1,
+      "write_to_color_attachment": 1,
+      "write_to_normal_attachment": 1,
+      "write_to_material_attachment": 1,
+      "write_to_mrao_attachment": 1
     }
   ]
 }

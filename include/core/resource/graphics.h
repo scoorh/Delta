@@ -8,11 +8,12 @@ namespace resource
 {
     constexpr u32 gpu_transfer_work_count = 4;
 
-    constexpr u16 interaction_buffer_image_id = 65000;
-    constexpr u16 depth_buffer_image_id = 65001;
-    constexpr u16 normal_buffer_image_id = 65002;
-    constexpr u16 color_buffer_image_id = 65003;
-    constexpr u16 material_buffer_image_id = 65004;
+    constexpr u16 interaction_attachment_image_id = 65000;
+    constexpr u16 depth_attachment_image_id = 65001;
+    constexpr u16 normal_attachment_image_id = 65002;
+    constexpr u16 color_attachment_image_id = 65003;
+    constexpr u16 material_attachment_image_id = 65004;
+    constexpr u16 mrao_attachment_image_id = 65005;
     constexpr u16 frame_data_buffer_id = 65000;
     constexpr u16 frame_data_buffer_id_N = 65005;
     constexpr u16 gpu_transfer_work_staging_buffer_id = 65006;
@@ -184,10 +185,10 @@ namespace resource
             b8 depth_write_enabled;
             u8 layout_idx;
             b8 write_to_color_buffer;
-            b8 write_to_interaction_buffer;
-            b8 write_to_normal_buffer;
+            b8 write_to_mrao_buffer;
             b8 write_to_material_buffer;
-            b8 _pad0;
+            b8 write_to_normal_buffer;
+            b8 write_to_interaction_buffer;
         };
 
         static_assert(offsetof(setup_t, id) == 0);

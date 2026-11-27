@@ -74,7 +74,7 @@ static void geometry_pass(renderer::frame_t *frame)
 {
     const auto cmd = frame->draw_cmd_buffer;
 
-    constexpr u32 attachment_image_barrier_count = 5;
+    constexpr u32 attachment_image_barrier_count = 6;
     VkImageMemoryBarrier2 attachment_image_barriers[attachment_image_barrier_count] = {};
     VkDependencyInfo layout_transition_barrier_dependency_info = {};
 
@@ -83,32 +83,39 @@ static void geometry_pass(renderer::frame_t *frame)
     layout_transition_barrier_dependency_info.pImageMemoryBarriers = attachment_image_barriers;
 
     resource::image::layout_transition(&attachment_image_barriers[0],
-                                       renderer::color_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       renderer::attachment_image.color, VK_IMAGE_ASPECT_COLOR_BIT,
                                        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
 
     resource::image::layout_transition(&attachment_image_barriers[1],
-                                       renderer::interaction_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       renderer::attachment_image.mrao, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+
+
+    resource::image::layout_transition(&attachment_image_barriers[2],
+                                       renderer::attachment_image.material, VK_IMAGE_ASPECT_COLOR_BIT,
                                        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                        VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT,
                                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
 
-    resource::image::layout_transition(&attachment_image_barriers[2],
-                                       renderer::normal_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
-                                       VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-                                       VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
-
     resource::image::layout_transition(&attachment_image_barriers[3],
-                                       renderer::material_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       renderer::attachment_image.normal, VK_IMAGE_ASPECT_COLOR_BIT,
                                        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
-
 
     resource::image::layout_transition(&attachment_image_barriers[4],
-                                       renderer::depth_buffer_image, VK_IMAGE_ASPECT_DEPTH_BIT,
+                                       renderer::attachment_image.interaction, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+
+
+    resource::image::layout_transition(&attachment_image_barriers[5],
+                                       renderer::attachment_image.depth, VK_IMAGE_ASPECT_DEPTH_BIT,
                                        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                                        VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
@@ -116,12 +123,12 @@ static void geometry_pass(renderer::frame_t *frame)
     vulkan::vkCmdPipelineBarrier2(cmd, &layout_transition_barrier_dependency_info);
 
 
-    constexpr u32 color_attachment_count = 4;
+    constexpr u32 color_attachment_count = 5;
     VkRenderingAttachmentInfo color_attachment_info[color_attachment_count] = {};
     VkRenderingAttachmentInfo depth_attachment_info = {};
 
     color_attachment_info[0].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    color_attachment_info[0].imageView = renderer::color_buffer_image_view;
+    color_attachment_info[0].imageView = renderer::attachment_image_view.color;
     color_attachment_info[0].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
     color_attachment_info[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     color_attachment_info[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -131,31 +138,41 @@ static void geometry_pass(renderer::frame_t *frame)
     color_attachment_info[0].clearValue.color.float32[3] = 1.0f;
 
     color_attachment_info[1].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    color_attachment_info[1].imageView = renderer::material_buffer_image_view;
+    color_attachment_info[1].imageView = renderer::attachment_image_view.mrao;
     color_attachment_info[1].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
     color_attachment_info[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     color_attachment_info[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    color_attachment_info[1].clearValue.color.uint32[0] = 0xffffffff;
+    color_attachment_info[1].clearValue.color.float32[0] = 0.0f;
+    color_attachment_info[1].clearValue.color.float32[1] = 0.0f;
+    color_attachment_info[1].clearValue.color.float32[2] = 0.0f;
+    color_attachment_info[1].clearValue.color.float32[3] = 0.0f;
 
     color_attachment_info[2].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    color_attachment_info[2].imageView = renderer::normal_buffer_image_view;
+    color_attachment_info[2].imageView = renderer::attachment_image_view.material;
     color_attachment_info[2].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
     color_attachment_info[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     color_attachment_info[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    color_attachment_info[2].clearValue.color.float32[0] = 0.0f;
-    color_attachment_info[2].clearValue.color.float32[1] = 0.0f;
-    color_attachment_info[2].clearValue.color.float32[2] = 0.0f;
-    color_attachment_info[2].clearValue.color.float32[3] = 0.0f;
+    color_attachment_info[2].clearValue.color.uint32[0] = 0xffffffff;
 
     color_attachment_info[3].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    color_attachment_info[3].imageView = renderer::interaction_buffer_image_view;
+    color_attachment_info[3].imageView = renderer::attachment_image_view.normal;
     color_attachment_info[3].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
     color_attachment_info[3].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     color_attachment_info[3].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    color_attachment_info[3].clearValue.color.uint32[0] = 0xffffffff;
+    color_attachment_info[3].clearValue.color.float32[0] = 0.0f;
+    color_attachment_info[3].clearValue.color.float32[1] = 0.0f;
+    color_attachment_info[3].clearValue.color.float32[2] = 0.0f;
+    color_attachment_info[3].clearValue.color.float32[3] = 0.0f;
+
+    color_attachment_info[4].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    color_attachment_info[4].imageView = renderer::attachment_image_view.interaction;
+    color_attachment_info[4].imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    color_attachment_info[4].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment_info[4].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment_info[4].clearValue.color.uint32[0] = 0xffffffff;
 
     depth_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    depth_attachment_info.imageView = renderer::depth_buffer_image_view;
+    depth_attachment_info.imageView = renderer::attachment_image_view.depth;
     depth_attachment_info.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
     depth_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -217,7 +234,7 @@ static void post_process_pass(renderer::frame_t *frame)
 {
     const auto cmd = frame->draw_cmd_buffer;
 
-    constexpr u32 attachment_image_barrier_count = 5;
+    constexpr u32 attachment_image_barrier_count = 6;
     VkImageMemoryBarrier2 attachment_image_barriers[attachment_image_barrier_count] = {};
     VkDependencyInfo layout_transition_barrier_dependency_info = {};
 
@@ -232,25 +249,31 @@ static void post_process_pass(renderer::frame_t *frame)
                                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
 
     resource::image::layout_transition(&attachment_image_barriers[1],
-                                       renderer::color_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       renderer::attachment_image.color, VK_IMAGE_ASPECT_COLOR_BIT,
                                        VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
                                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
 
     resource::image::layout_transition(&attachment_image_barriers[2],
-                                       renderer::normal_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       renderer::attachment_image.mrao, VK_IMAGE_ASPECT_COLOR_BIT,
                                        VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
                                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
 
     resource::image::layout_transition(&attachment_image_barriers[3],
-                                       renderer::material_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       renderer::attachment_image.material, VK_IMAGE_ASPECT_COLOR_BIT,
                                        VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
                                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
 
     resource::image::layout_transition(&attachment_image_barriers[4],
-                                       renderer::depth_buffer_image, VK_IMAGE_ASPECT_DEPTH_BIT,
+                                       renderer::attachment_image.normal, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                       VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
+
+    resource::image::layout_transition(&attachment_image_barriers[5],
+                                       renderer::attachment_image.depth, VK_IMAGE_ASPECT_DEPTH_BIT,
                                        VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
                                        VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
                                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
@@ -650,7 +673,7 @@ static void readback_interaction_buffer(renderer::frame_t *frame)
     layout_transition_barrier_dependency_info.pImageMemoryBarriers = attachment_image_barriers;
 
     resource::image::layout_transition(&attachment_image_barriers[0],
-                                       renderer::interaction_buffer_image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                       renderer::attachment_image.interaction, VK_IMAGE_ASPECT_COLOR_BIT,
                                        VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                                        VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
@@ -661,7 +684,7 @@ static void readback_interaction_buffer(renderer::frame_t *frame)
     resource::gpu_transfer_work_t::cmd_t transfer_cmd = {};
     transfer_cmd.attachment_readback.dst = gpu_transfer_work->src_buffer;
     transfer_cmd.attachment_readback.dst_offset = 0;
-    transfer_cmd.attachment_readback.src = renderer::interaction_buffer_image;
+    transfer_cmd.attachment_readback.src = renderer::attachment_image.interaction;
     transfer_cmd.attachment_readback.src_x_offset = 0;
     transfer_cmd.attachment_readback.src_y_offset = 0;
     transfer_cmd.attachment_readback.src_width = 1;

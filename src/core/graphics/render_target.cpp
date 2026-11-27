@@ -104,72 +104,86 @@ static void create_other_attachments()
     image_setup.height = renderer::window_height;
 
 
-    image_setup.id = resource::interaction_buffer_image_id;
-    image_setup.format = gpu_info::format->interaction_buffer;
+    image_setup.id = resource::interaction_attachment_image_id;
+    image_setup.format = gpu_info::format->interaction_attachment_image;
     image_setup.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     image_setup.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 
     image = resource::image::create(&image_setup);
     if (nullptr == image)
     {
-        logger::critical_error(logger::code::create_interaction_buffer, 0);
+        logger::critical_error(logger::code::create_interaction_attachment_image, 0);
     }
-    renderer::interaction_buffer_image = image->handle;
-    renderer::interaction_buffer_image_view = image->view;
+    renderer::attachment_image.interaction = image->handle;
+    renderer::attachment_image_view.interaction = image->view;
 
 
-    image_setup.id = resource::depth_buffer_image_id;
-    image_setup.format = gpu_info::format->depth_buffer;
+    image_setup.id = resource::depth_attachment_image_id;
+    image_setup.format = gpu_info::format->depth_attachment_image;
     image_setup.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     image_setup.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
 
     image = resource::image::create(&image_setup);
     if (nullptr == image)
     {
-        logger::critical_error(logger::code::create_depth_buffer, 0);
+        logger::critical_error(logger::code::create_depth_attachment_image, 0);
     }
-    renderer::depth_buffer_image = image->handle;
-    renderer::depth_buffer_image_view = image->view;
+    renderer::attachment_image.depth = image->handle;
+    renderer::attachment_image_view.depth = image->view;
 
 
-    image_setup.id = resource::normal_buffer_image_id;
-    image_setup.format = gpu_info::format->normal_buffer;
+    image_setup.id = resource::normal_attachment_image_id;
+    image_setup.format = gpu_info::format->normal_attachment_image;
     image_setup.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     image_setup.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 
     image = resource::image::create(&image_setup);
     if (nullptr == image)
     {
-        logger::critical_error(logger::code::create_normal_buffer, 0);
+        logger::critical_error(logger::code::create_normal_attachment_image, 0);
     }
-    renderer::normal_buffer_image = image->handle;
-    renderer::normal_buffer_image_view = image->view;
+    renderer::attachment_image.normal = image->handle;
+    renderer::attachment_image_view.normal = image->view;
 
 
-    image_setup.id = resource::color_buffer_image_id;
-    image_setup.format = gpu_info::format->color_buffer;
+    image_setup.id = resource::color_attachment_image_id;
+    image_setup.format = gpu_info::format->color_attachment_image;
     image_setup.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     image_setup.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 
     image = resource::image::create(&image_setup);
     if (nullptr == image)
     {
-        logger::critical_error(logger::code::create_color_buffer, 0);
+        logger::critical_error(logger::code::create_color_attachment_image, 0);
     }
-    renderer::color_buffer_image = image->handle;
-    renderer::color_buffer_image_view = image->view;
+    renderer::attachment_image.color = image->handle;
+    renderer::attachment_image_view.color = image->view;
 
 
-    image_setup.id = resource::material_buffer_image_id;
-    image_setup.format = gpu_info::format->material_buffer;
+    image_setup.id = resource::material_attachment_image_id;
+    image_setup.format = gpu_info::format->material_attachment_image;
     image_setup.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     image_setup.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 
     image = resource::image::create(&image_setup);
     if (nullptr == image)
     {
-        logger::critical_error(logger::code::create_material_buffer, 0);
+        logger::critical_error(logger::code::create_material_attachment_image, 0);
     }
-    renderer::material_buffer_image = image->handle;
-    renderer::material_buffer_image_view = image->view;
+    renderer::attachment_image.material = image->handle;
+    renderer::attachment_image_view.material = image->view;
+
+
+    image_setup.id = resource::mrao_attachment_image_id;
+    image_setup.format = gpu_info::format->mrao_attachment_image;
+    image_setup.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    image_setup.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+
+    image = resource::image::create(&image_setup);
+    if (nullptr == image)
+    {
+        logger::critical_error(logger::code::create_mrao_attachment_image, 0);
+    }
+    renderer::attachment_image.mrao = image->handle;
+    renderer::attachment_image_view.mrao = image->view;
 }

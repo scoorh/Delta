@@ -69,10 +69,13 @@ static b8 validate(const gpu_info::aggregate_t *t)
     if (!t->features.independent_blend) return false;
     if (!t->features.multi_draw_indirect) return false;
 
-    if (t->format.depth_buffer == VK_FORMAT_UNDEFINED) return false;
-    if (t->format.interaction_buffer == VK_FORMAT_UNDEFINED) return false;
-    if (t->format.normal_buffer == VK_FORMAT_UNDEFINED) return false;
-    if (t->format.color_buffer == VK_FORMAT_UNDEFINED) return false;
+    if (t->format.depth_attachment_image == VK_FORMAT_UNDEFINED) return false;
+    if (t->format.interaction_attachment_image == VK_FORMAT_UNDEFINED) return false;
+    if (t->format.normal_attachment_image == VK_FORMAT_UNDEFINED) return false;
+    if (t->format.color_attachment_image == VK_FORMAT_UNDEFINED) return false;
+    if (t->format.mrao_attachment_image == VK_FORMAT_UNDEFINED) return false;
+
+    if (t->limit.max_color_attachments < 5) return false;
 
     if (t->memory.device_local_type_bits == 0) return false;
 
@@ -103,6 +106,7 @@ static void get_basic_properties_and_limits(gpu_info::aggregate_t *t)
     t->basic.type = device_properties2.properties.deviceType;
     t->limit.min_uniform_buffer_offset_alignment = static_cast<u16>(device_properties2.properties.limits.minUniformBufferOffsetAlignment);
     t->limit.min_storage_buffer_offset_alignment = static_cast<u16>(device_properties2.properties.limits.minStorageBufferOffsetAlignment);
+    t->limit.max_color_attachments = static_cast<u8>(device_properties2.properties.limits.maxColorAttachments);
 }
 
 
@@ -206,31 +210,67 @@ static void get_formats(gpu_info::aggregate_t *t)
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R8G8B8A8_UNORM, &t->format.R8G8B8A8_UNORM);
     vulkan::vkGetPhysicalDeviceFormatProperties(t->basic.handle, VK_FORMAT_R16G16B16A16_SFLOAT, &t->format.R16G16B16A16_SFLOAT);
 
-    t->format.depth_buffer = VK_FORMAT_UNDEFINED;
-    t->format.interaction_buffer = VK_FORMAT_UNDEFINED;
-    t->format.normal_buffer = VK_FORMAT_UNDEFINED;
-    t->format.color_buffer = VK_FORMAT_UNDEFINED;
-    t->format.material_buffer = VK_FORMAT_UNDEFINED;
+    t->format.depth_attachment_image = VK_FORMAT_UNDEFINED;
+    t->format.interaction_attachment_image = VK_FORMAT_UNDEFINED;
+    t->format.normal_attachment_image = VK_FORMAT_UNDEFINED;
+    t->format.color_attachment_image = VK_FORMAT_UNDEFINED;
+    t->format.material_attachment_image = VK_FORMAT_UNDEFINED;
+    t->format.mrao_attachment_image = VK_FORMAT_UNDEFINED;
 
-    if (t->format.D32_SFLOAT.optimalTilingFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
+    constexpr u32 format_test_count = 6;
+    struct _format_test_t
     {
-        t->format.depth_buffer = VK_FORMAT_D32_SFLOAT;
-    }
-    if (t->format.R32_UINT.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
+        VkFormat format;
+        VkFormatProperties* format_properties;
+        VkFormatFeatureFlags required_flags;
+        VkFormat* dst;
+    };
+    _format_test_t format_test[format_test_count];
+
+    u32 d = 0;
+    format_test[d].dst = &t->format.depth_attachment_image;
+    format_test[d].format = VK_FORMAT_D32_SFLOAT;
+    format_test[d].format_properties = &t->format.D32_SFLOAT;
+    format_test[d].required_flags = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+    ++d;
+
+    format_test[d].dst = &t->format.interaction_attachment_image;
+    format_test[d].format = VK_FORMAT_R32_UINT;
+    format_test[d].format_properties = &t->format.R32_UINT;
+    format_test[d].required_flags = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+    ++d;
+
+    format_test[d].dst = &t->format.normal_attachment_image;
+    format_test[d].format = VK_FORMAT_R16G16_SNORM;
+    format_test[d].format_properties = &t->format.R16G16_SNORM;
+    format_test[d].required_flags = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+    ++d;
+
+    format_test[d].dst = &t->format.color_attachment_image;
+    format_test[d].format = VK_FORMAT_R16G16B16A16_SFLOAT;
+    format_test[d].format_properties = &t->format.R16G16B16A16_SFLOAT;
+    format_test[d].required_flags = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+    ++d;
+
+    format_test[d].dst = &t->format.material_attachment_image;
+    format_test[d].format = VK_FORMAT_R16_UINT;
+    format_test[d].format_properties = &t->format.R16_UINT;
+    format_test[d].required_flags = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+    ++d;
+
+    format_test[d].dst = &t->format.mrao_attachment_image;
+    format_test[d].format = VK_FORMAT_R8G8B8A8_UNORM;
+    format_test[d].format_properties = &t->format.R8G8B8A8_UNORM;
+    format_test[d].required_flags = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+    ++d;
+
+
+    for (u32 i = 0; i < format_test_count; ++i)
     {
-        t->format.interaction_buffer = VK_FORMAT_R32_UINT;
-    }
-    if (t->format.R16G16_SNORM.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
-    {
-        t->format.normal_buffer = VK_FORMAT_R16G16_SNORM;
-    }
-    if (t->format.R16G16B16A16_SFLOAT.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
-    {
-        t->format.color_buffer = VK_FORMAT_R16G16B16A16_SFLOAT;
-    }
-    if (t->format.R16_UINT.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
-    {
-        t->format.material_buffer = VK_FORMAT_R16_UINT;
+        if (format_test[i].required_flags == (format_test[i].format_properties->optimalTilingFeatures & format_test[i].required_flags))
+        {
+            *format_test[i].dst = format_test[i].format;
+        }
     }
 }
 
